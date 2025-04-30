@@ -1,14 +1,18 @@
 package net.glassmc.mapartcopyright.commands;
 
-import net.glassmc.mapartcopyright.util.LockUtil;
-import net.glassmc.mapartcopyright.util.LoreUtil;
+import java.util.UUID;
+
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.UUID;
+import net.glassmc.mapartcopyright.Audit.AuditLogger;
+import net.glassmc.mapartcopyright.database.OwnershipDatabase;
+import net.glassmc.mapartcopyright.economy.EconomyUtil;
+import net.glassmc.mapartcopyright.util.LockUtil;
+import net.glassmc.mapartcopyright.util.LoreUtil;
 
 public class LockCommand implements SubCommand {
 
@@ -32,16 +36,31 @@ public class LockCommand implements SubCommand {
         ItemStack item = player.getInventory().getItemInMainHand();
 
         if (item.getItemMeta() instanceof MapMeta mapMeta) {
-            // Generate a UUID if one isn't already assigned
+            if (EconomyUtil.isEnabled() && !player.hasPermission("mapart.free")) {
+                double cost = EconomyUtil.getCost("lock");
+                if (!EconomyUtil.charge(player, cost)) {
+                    player.sendMessage("§cYou need §e$" + cost + "§c to lock a map.");
+                    return;
+                }
+            }
+
+            // Generate UUID if it doesn't exist
             if (!mapMeta.getPersistentDataContainer().has(LockUtil.MAPART_ID_KEY, PersistentDataType.STRING)) {
                 String uuid = UUID.randomUUID().toString();
                 mapMeta.getPersistentDataContainer().set(LockUtil.MAPART_ID_KEY, PersistentDataType.STRING, uuid);
             }
 
+            // Record ownership
+            String mapUUID = mapMeta.getPersistentDataContainer().get(LockUtil.MAPART_ID_KEY, PersistentDataType.STRING);
+            if (mapUUID != null) {
+                OwnershipDatabase.setOwner(mapUUID, player.getUniqueId());
+                AuditLogger.log("locked", player.getName(), mapUUID); // ✅ Audit log
+            }
+
             // Lock the map
             mapMeta.getPersistentDataContainer().set(LockUtil.LOCK_KEY, PersistentDataType.BYTE, (byte) 1);
 
-            // Enable hologram by default if not already set
+            // Set hologram visibility by default
             if (!mapMeta.getPersistentDataContainer().has(LockUtil.HOLOGRAM_VISIBLE_KEY, PersistentDataType.BYTE)) {
                 mapMeta.getPersistentDataContainer().set(LockUtil.HOLOGRAM_VISIBLE_KEY, PersistentDataType.BYTE, (byte) 1);
             }

@@ -19,7 +19,7 @@ public class MapArtCommand implements CommandExecutor {
         register(new CreditCommand());
         register(new MenuCommand());
         register(new InfoCommand());
-
+        register(new AuditCommand());
     }
 
     private void register(SubCommand subCommand) {

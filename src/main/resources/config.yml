@@ -26,8 +26,16 @@ messages:
   toggled-hologram-on: "§aCreator tag shown."
   toggled-hologram-off: "§7Creator tag hidden."
 
+  
+  economy:
+    enabled: true
+    lock-cost: 100.0
+    unlock-cost: 50.0
+
 # Optional future features
 features:
   enable-permissions: true
   enable-map-lore-updates: true
   enable-gui: true
+
+  

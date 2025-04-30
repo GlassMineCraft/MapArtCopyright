@@ -5,6 +5,9 @@ api-version: 1.21
 author: GlassMC
 description: Adds copyright, naming, and locking features for map art
 
+
+depend: [Vault]
+
 commands:
   mapart:
     description: Manage map art copyright
@@ -44,19 +47,30 @@ permissions:
     description: Toggle creator hologram in GUI
     default: true
 
+mapart.bypass:
+  description: Allows bypassing map ownership restrictions
+  default: op
+
 mapart.info:
   description: Allows viewing UUID and metadata of a map
   default: op
 
-  mapart.*:
-    description: Grants access to all MapArtCopyright features
+  mapart.audit:
+    description: View audit logs for a specific map
     default: op
-    children:
-      mapart.use: true
-      mapart.lock: true
-      mapart.unlock: true
-      mapart.credit: true
-      mapart.rename: true
-      mapart.menu: true
-      mapart.toggle.displayname: true
-      mapart.toggle.hologram: true
+
+mapart.*:
+  description: Grants access to all MapArtCopyright features
+  default: op
+  children:
+    mapart.use: true
+    mapart.lock: true
+    mapart.unlock: true
+    mapart.credit: true
+    mapart.rename: true
+    mapart.menu: true
+    mapart.toggle.displayname: true
+    mapart.toggle.hologram: true
+    mapart.bypass: true
+    mapart.info: true
+    mapart.audit: true

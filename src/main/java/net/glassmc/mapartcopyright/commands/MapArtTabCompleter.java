@@ -8,17 +8,23 @@ import org.bukkit.entity.Player;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MapArtTabCompleter implements TabCompleter {
 
-    private static final List<String> SUBCOMMANDS = Arrays.asList("lock", "unlock", "name", "credit");
+    private static final List<String> SUBCOMMANDS = Arrays.asList(
+            "lock", "unlock", "name", "credit", "menu", "audit", "info"
+    );
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             return SUBCOMMANDS.stream()
-                    .filter(sub -> sub.startsWith(args[0].toLowerCase()))
-                    .toList();
+                    .filter(sub -> {
+                        if (sub.equals("audit") && !sender.hasPermission("mapart.audit")) return false;
+                        return sub.startsWith(args[0].toLowerCase());
+                    })
+                    .collect(Collectors.toList());
         }
 
         if (args.length == 2 && (args[0].equalsIgnoreCase("credit") || args[0].equalsIgnoreCase("name"))) {

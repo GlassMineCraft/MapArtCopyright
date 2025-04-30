@@ -2,6 +2,8 @@ package net.glassmc.mapartcopyright;
 
 import net.glassmc.mapartcopyright.commands.MapArtCommand;
 import net.glassmc.mapartcopyright.commands.MapArtTabCompleter;
+import net.glassmc.mapartcopyright.database.OwnershipDatabase;
+import net.glassmc.mapartcopyright.economy.EconomyHandler;
 import net.glassmc.mapartcopyright.listeners.ChatInputListener;
 import net.glassmc.mapartcopyright.listeners.MapArtMenuListener;
 import net.glassmc.mapartcopyright.listeners.MapFrameListener;
@@ -25,6 +27,14 @@ public final class MapArtCopyright extends JavaPlugin {
         pm.registerEvents(new MapFrameListener(), this);
         pm.registerEvents(new MapArtMenuListener(), this);
         pm.registerEvents(new ChatInputListener(), this);
+
+        // Vault economy setup
+        if (!EconomyHandler.setup()) {
+            getLogger().warning("Vault not found or no economy provider detected.");
+        }
+
+        // Ownership DB setup
+        OwnershipDatabase.connect();
     }
 
     @Override
