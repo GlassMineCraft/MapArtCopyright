@@ -2,6 +2,8 @@ package net.glassmc.mapartcopyright.api;
 
 import net.glassmc.mapartcopyright.database.OwnershipDatabase;
 import net.glassmc.mapartcopyright.util.LockUtil;
+
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -42,4 +44,24 @@ public class MapArtAPI {
         String mapUUID = getMapUUID(item);
         return mapUUID != null ? OwnershipDatabase.getOwner(mapUUID) : null;
     }
+
+    /**
+     * Checks if the player is the registered owner of the map.
+     */
+    public static boolean isOwner(Player player, ItemStack item) {
+        return getOwner(item)
+                .map(owner -> owner.equals(player.getUniqueId()))
+                .orElse(false);
+    }
+
+    /**
+     * Returns whether the map has a valid persistent UUID.
+     */
+    public static boolean hasMapUUID(ItemStack item) {
+        return getMapUUID(item).isPresent();
+    }
+
+    // More future-safe API methods can be added here as needed
+} 
+
 }
