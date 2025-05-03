@@ -9,6 +9,7 @@ import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.UUID;
+import java.util.Optional;
 
 public class MapArtAPI {
 
@@ -49,19 +50,20 @@ public class MapArtAPI {
      * Checks if the player is the registered owner of the map.
      */
     public static boolean isOwner(Player player, ItemStack item) {
-        return getOwner(item)
-                .map(owner -> owner.equals(player.getUniqueId()))
-                .orElse(false);
+        UUID owner = getOwner(item);
+        return owner != null && owner.equals(player.getUniqueId());
     }
 
     /**
      * Returns whether the map has a valid persistent UUID.
      */
     public static boolean hasMapUUID(ItemStack item) {
-        return getMapUUID(item).isPresent();
+        return getMapUUID(item) != null;
     }
-
-    // More future-safe API methods can be added here as needed
-} 
-
+    
+    public static Optional<String> getStoredMapName(ItemStack item) {
+        if (item == null || !(item.getItemMeta() instanceof MapMeta meta)) return Optional.empty();
+        if (!meta.hasDisplayName()) return Optional.empty();
+        return Optional.ofNullable(meta.getDisplayName());
+    }
 }
