@@ -6,7 +6,8 @@ author: GlassMC
 description: Adds copyright, naming, and locking features for map art
 
 
-depend: [Vault]
+depend: [Vault, CMILib]
+
 
 commands:
   mapart:
@@ -59,6 +60,14 @@ mapart.info:
     description: View audit logs for a specific map
     default: op
 
+mapart.verify:
+  description: Allows players to verify their own map art
+  default: true
+
+mapart.verify.others:
+  description: Allows admins to verify other players' map art
+  default: op
+  
 mapart.*:
   description: Grants access to all MapArtCopyright features
   default: op

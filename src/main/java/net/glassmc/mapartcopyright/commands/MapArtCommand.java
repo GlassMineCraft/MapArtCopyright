@@ -20,6 +20,11 @@ public class MapArtCommand implements CommandExecutor {
         register(new MenuCommand());
         register(new InfoCommand());
         register(new AuditCommand());
+        register(new VerifyCommand());
+        register(new HelpCommand());
+        register(new ExportCommand());
+
+
     }
 
     private void register(SubCommand subCommand) {
@@ -29,7 +34,7 @@ public class MapArtCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-        	sender.sendMessage("§cUsage: /mapart <lock | unlock | name | credit | menu | info>");
+        	sender.sendMessage("§cUsage: /mapart <lock | unlock | name | credit | menu | info | audit>");
             return true;
         }
 

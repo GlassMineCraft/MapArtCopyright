@@ -54,12 +54,20 @@ public class UnlockCommand implements SubCommand {
             player.sendMessage("§cYou are not the owner of this map.");
             return;
         }
+
         if (EconomyUtil.isEnabled() && !player.hasPermission("mapart.free")) {
             double cost = EconomyUtil.getCost("unlock");
             if (!EconomyUtil.charge(player, cost)) {
                 player.sendMessage("§cYou need §e$" + cost + "§c to unlock this map.");
                 return;
             }
+        }
+
+        // Restore display name if previously saved in NBT
+        String storedName = meta.getPersistentDataContainer().get(LockUtil.MAPART_NAME_KEY, PersistentDataType.STRING);
+        if (storedName != null && (meta.getDisplayName() == null || meta.getDisplayName().isEmpty())) {
+            meta.setDisplayName(storedName);
+            item.setItemMeta(meta);
         }
 
         UnlockUtil.unlock(item);

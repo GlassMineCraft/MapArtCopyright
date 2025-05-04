@@ -1,6 +1,13 @@
 package net.glassmc.mapartcopyright.commands;
 
-import java.util.UUID;
+import net.glassmc.mapartcopyright.database.OwnershipDatabase;
+import net.glassmc.mapartcopyright.economy.EconomyUtil;
+import net.glassmc.mapartcopyright.util.CreditUtil;
+import net.glassmc.mapartcopyright.util.LockUtil;
+import net.glassmc.mapartcopyright.util.LoreUtil;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -8,13 +15,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.persistence.PersistentDataType;
 
-import net.glassmc.mapartcopyright.Audit.AuditLogger;
-import net.glassmc.mapartcopyright.database.OwnershipDatabase;
-import net.glassmc.mapartcopyright.economy.EconomyUtil;
-import net.glassmc.mapartcopyright.util.LockUtil;
-import net.glassmc.mapartcopyright.util.LoreUtil;
+import java.util.UUID;
 
 public class LockCommand implements SubCommand {
+
+    private static final MiniMessage MINI = MiniMessage.miniMessage();
 
     @Override
     public String getName() {
@@ -50,12 +55,29 @@ public class LockCommand implements SubCommand {
                 mapMeta.getPersistentDataContainer().set(LockUtil.MAPART_ID_KEY, PersistentDataType.STRING, uuid);
             }
 
+            // Save the map display name to NBT in MiniMessage format
+            if (!mapMeta.getPersistentDataContainer().has(LockUtil.MAPART_NAME_KEY, PersistentDataType.STRING)) {
+                String storedName;
+                if (mapMeta.hasDisplayName()) {
+                    Component displayName = mapMeta.displayName();
+                    storedName = MINI.serialize(displayName);
+                } else {
+                    storedName = "<gray>Untitled Map";
+                }
+                mapMeta.getPersistentDataContainer().set(LockUtil.MAPART_NAME_KEY, PersistentDataType.STRING, storedName);
+                mapMeta.getPersistentDataContainer().set(LockUtil.CREATOR_UUID_KEY, PersistentDataType.STRING, player.getUniqueId().toString());
+
+            }
+
             // Record ownership
             String mapUUID = mapMeta.getPersistentDataContainer().get(LockUtil.MAPART_ID_KEY, PersistentDataType.STRING);
+            String mapName = mapMeta.getPersistentDataContainer().get(LockUtil.MAPART_NAME_KEY, PersistentDataType.STRING);
+            String creatorName = CreditUtil.getCredit(item); // Or fetch from wherever you store it
+
             if (mapUUID != null) {
-                OwnershipDatabase.setOwner(mapUUID, player.getUniqueId());
-                AuditLogger.log("locked", player.getName(), mapUUID); // ✅ Audit log
+                OwnershipDatabase.setOwner(mapUUID, player.getUniqueId(), mapName, creatorName);
             }
+
 
             // Lock the map
             mapMeta.getPersistentDataContainer().set(LockUtil.LOCK_KEY, PersistentDataType.BYTE, (byte) 1);
