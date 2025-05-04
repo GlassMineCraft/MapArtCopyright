@@ -7,6 +7,8 @@ import net.glassmc.mapartcopyright.economy.EconomyHandler;
 import net.glassmc.mapartcopyright.listeners.ChatInputListener;
 import net.glassmc.mapartcopyright.listeners.MapArtMenuListener;
 import net.glassmc.mapartcopyright.listeners.MapFrameListener;
+
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -18,6 +20,8 @@ public final class MapArtCopyright extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+        OwnershipDatabase.connect();
+        
         getLogger().info("MapArtCopyright plugin enabled.");
 
         getCommand("mapart").setExecutor(new MapArtCommand());
@@ -32,9 +36,13 @@ public final class MapArtCopyright extends JavaPlugin {
         if (!EconomyHandler.setup()) {
             getLogger().warning("Vault not found or no economy provider detected.");
         }
+        // CMILib
+        if (Bukkit.getPluginManager().getPlugin("CMILib") == null) {
+            getLogger().warning("CMILib not found! Some features may not work properly.");
+        } else {
+            getLogger().info("CMILib detected and hooked.");
+        }
 
-        // Ownership DB setup
-        OwnershipDatabase.connect();
     }
 
     @Override
