@@ -16,13 +16,18 @@ public class ExportCommand implements SubCommand {
 
     @Override
     public String getName() {
-        return "exportdb";
+        return "export";
     }
 
     @Override
     public void execute(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player) || !player.isOp()) {
             sender.sendMessage("§cThis test command is for server operators only.");
+            return;
+        }
+
+        if (!OwnershipDatabase.isConnected()) {
+            sender.sendMessage("§cDatabase not connected, export failed.");
             return;
         }
 
