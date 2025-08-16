@@ -1,11 +1,11 @@
 package net.glassmc.mapartcopyright.listeners;
 
-import net.glassmc.mapartcopyright.api.MapArtAPI;
 import net.glassmc.mapartcopyright.gui.MapArtGUI;
 import net.glassmc.mapartcopyright.util.CreditUtil;
 import net.glassmc.mapartcopyright.util.InputManager;
 import net.glassmc.mapartcopyright.util.LockUtil;
 import net.glassmc.mapartcopyright.util.LoreUtil;
+import net.glassmc.mapartcopyright.util.PermissionUtil;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
@@ -39,11 +39,9 @@ public class MapArtMenuListener implements Listener {
                     player.sendMessage(Component.text("You don’t have permission to rename maps.", NamedTextColor.RED));
                     return;
                 }
-                if (MapArtAPI.isLocked(map) && !MapArtAPI.isOwner(player, map) && !player.hasPermission("mapart.admin")) {
-                    player.sendMessage(Component.text("This map is locked and you are not the owner.", NamedTextColor.RED));
-                    return;
+                if (PermissionUtil.canModify(player, map)) {
+                    InputManager.ask(player, InputManager.InputType.RENAME_MAP, map);
                 }
-                InputManager.ask(player, InputManager.InputType.RENAME_MAP, map);
             }
 
             case WRITABLE_BOOK -> handleInput(player, "mapart.credit", InputManager.InputType.SET_CREDIT, map, "set creator names");
@@ -57,6 +55,7 @@ public class MapArtMenuListener implements Listener {
                     player.sendMessage(Component.text("You don’t have permission to set creator names.", NamedTextColor.RED));
                     return;
                 }
+                if (!PermissionUtil.canModify(player, map, Component.text("You cannot set the creator on a locked map you do not own.", NamedTextColor.RED))) return;
                 boolean success = CreditUtil.setCredit(map, player.getName(), player);
                 if (success) {
                     player.sendMessage(Component.text("Creator set to: ", NamedTextColor.GREEN)
@@ -93,12 +92,7 @@ public class MapArtMenuListener implements Listener {
     private void handleToggle(Player player, String displayName, ItemStack map) {
         if (!(map.getItemMeta() instanceof MapMeta meta)) return;
 
-        boolean locked = MapArtAPI.isLocked(map);
-        boolean isOwner = MapArtAPI.isOwner(player, map);
-        if (locked && !isOwner && !player.hasPermission("mapart.admin")) {
-            player.sendMessage(Component.text("This map is locked and you are not the owner.", NamedTextColor.RED));
-            return;
-        }
+        if (!PermissionUtil.canModify(player, map)) return;
 
         boolean metaChanged = false;
 

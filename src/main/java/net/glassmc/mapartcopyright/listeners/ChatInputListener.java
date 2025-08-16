@@ -1,11 +1,11 @@
 package net.glassmc.mapartcopyright.listeners;
 
 import net.glassmc.mapartcopyright.MapArtCopyright;
-import net.glassmc.mapartcopyright.api.MapArtAPI;
 import net.glassmc.mapartcopyright.gui.MapArtGUI;
 import net.glassmc.mapartcopyright.util.InputManager;
 import net.glassmc.mapartcopyright.util.LockUtil;
 import net.glassmc.mapartcopyright.util.LoreUtil;
+import net.glassmc.mapartcopyright.util.PermissionUtil;
 import net.glassmc.mapartcopyright.util.StringSanitizer;
 
 import net.kyori.adventure.text.Component;
@@ -42,15 +42,9 @@ public class ChatInputListener implements Listener {
             return;
         }
 
-        boolean locked = MapArtAPI.isLocked(item);
-        boolean isOwner = MapArtAPI.isOwner(player, item);
-
         switch (InputManager.getType(player)) {
             case RENAME_MAP -> {
-                if (locked && !isOwner && !player.hasPermission("mapart.admin")) {
-                    player.sendMessage(Component.text("This map is locked and you are not the owner.", NamedTextColor.RED));
-                    break;
-                }
+                if (!PermissionUtil.canModify(player, item)) break;
 
                 String sanitized = StringSanitizer.clean(rawInput, 32);
                 meta.setDisplayName(sanitized);
@@ -61,10 +55,7 @@ public class ChatInputListener implements Listener {
             }
 
             case SET_CREDIT -> {
-                if (locked && !isOwner && !player.hasPermission("mapart.admin")) {
-                    player.sendMessage(Component.text("You cannot set the creator on a locked map you do not own.", NamedTextColor.RED));
-                    break;
-                }
+                if (!PermissionUtil.canModify(player, item, Component.text("You cannot set the creator on a locked map you do not own.", NamedTextColor.RED))) break;
 
                 String sanitized = StringSanitizer.clean(rawInput, 16);
                 meta.getPersistentDataContainer().set(LockUtil.CREDIT_KEY, PersistentDataType.STRING, sanitized);
