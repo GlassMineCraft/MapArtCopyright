@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 
 public class MapArtTabCompleter implements TabCompleter {
 
-	private static final List<String> SUBCOMMANDS = Arrays.asList(
-		    "lock", "unlock", "name", "credit", "menu", "audit", "info", "verify", "help"
-		);
+        private static final List<String> SUBCOMMANDS = Arrays.asList(
+                    "lock", "unlock", "name", "credit", "menu", "audit", "info", "verify", "help", "export"
+                );
  
 
 	@Override

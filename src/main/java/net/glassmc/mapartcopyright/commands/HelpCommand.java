@@ -18,6 +18,8 @@ public class HelpCommand implements SubCommand {
         sender.sendMessage("§e/mapart credit <name> §7- Set creator credit for the held map");
         sender.sendMessage("§e/mapart verify §7- Verify if you are the creator of the held map");
         sender.sendMessage("§e/mapart info §7- Show map UUID and stored metadata");
+        sender.sendMessage("§e/mapart audit §7- View audit logs for a map");
+        sender.sendMessage("§e/mapart export §7- Export ownership database (op only)");
         sender.sendMessage("§e/mapart menu §7- Open the GUI for managing the held map");
         sender.sendMessage("§8§m----------------------------------------------------");
     }
