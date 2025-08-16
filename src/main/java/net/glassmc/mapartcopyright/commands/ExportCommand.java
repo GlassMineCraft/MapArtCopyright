@@ -26,6 +26,11 @@ public class ExportCommand implements SubCommand {
             return;
         }
 
+        if (!OwnershipDatabase.isConnected()) {
+            sender.sendMessage("§cDatabase not connected, export failed.");
+            return;
+        }
+
         List<MapRecord> records = OwnershipDatabase.dumpAll();
         File file = new File(MapArtCopyright.getInstance().getDataFolder(), "ownership_export.csv");
 
