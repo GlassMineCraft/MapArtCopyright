@@ -16,7 +16,7 @@ public class ExportCommand implements SubCommand {
 
     @Override
     public String getName() {
-        return "exportdb";
+        return "export";
     }
 
     @Override
