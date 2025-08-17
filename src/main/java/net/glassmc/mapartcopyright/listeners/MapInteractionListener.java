@@ -51,9 +51,9 @@ public class MapInteractionListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         if (event.getClickedInventory() == null) return;
 
-        // Check for crafting table, cartography table, or anvil (renaming)
+        // Check for crafting table or cartography table
         InventoryType type = event.getInventory().getType();
-        if (type != InventoryType.CRAFTING && type != InventoryType.CARTOGRAPHY && type != InventoryType.ANVIL) return;
+        if (type != InventoryType.CRAFTING && type != InventoryType.CARTOGRAPHY) return;
 
         // Check if clicking the result slot
         if (event.getSlotType() != InventoryType.SlotType.RESULT) return;
@@ -78,23 +78,14 @@ public class MapInteractionListener implements Listener {
         boolean isOwner = MapArtAPI.isOwner(player, source);
         boolean hasBypass = player.hasPermission("mapart.bypass") || player.hasPermission("mapart.admin");
         if (!isOwner && !hasBypass) {
-            String actionWord = type == InventoryType.ANVIL ? "rename" : "clone or scale";
-            player.sendMessage("§cYou cannot " + actionWord + " this locked map.");
+            player.sendMessage("§cYou cannot clone or scale this locked map.");
             event.setCancelled(true);
-            String denied = type == InventoryType.ANVIL ? "denied_rename" : "denied_clone_or_scale";
-            AuditLogger.log(denied, player.getName(), mapUUID);
+            AuditLogger.log("denied_clone_or_scale", player.getName(), mapUUID);
             return;
         }
 
         // Log successful action
-        String action;
-        if (type == InventoryType.CRAFTING) {
-            action = "cloned";
-        } else if (type == InventoryType.CARTOGRAPHY) {
-            action = "scaled";
-        } else {
-            action = "renamed";
-        }
+        String action = type == InventoryType.CRAFTING ? "cloned" : "scaled";
         AuditLogger.log(action, player.getName(), mapUUID);
     }
 }
