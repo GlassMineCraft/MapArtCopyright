@@ -5,12 +5,42 @@ import net.glassmc.mapartcopyright.api.MapArtAPI;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 
 public class MapInteractionListener implements Listener {
+
+    @EventHandler
+    public void onCraftItem(CraftItemEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        ItemStack result = event.getInventory().getResult();
+        if (result == null || result.getType() != org.bukkit.Material.FILLED_MAP) return;
+        if (!(result.getItemMeta() instanceof MapMeta)) return;
+
+        if (!MapArtAPI.isLocked(result)) return;
+
+        String mapUUID = MapArtAPI.getMapUUID(result);
+        if (mapUUID == null) {
+            player.sendMessage("§cThis map has no ownership data.");
+            event.setCancelled(true);
+            return;
+        }
+
+        boolean isOwner = MapArtAPI.isOwner(player, result);
+        boolean hasBypass = player.hasPermission("mapart.bypass") || player.hasPermission("mapart.admin");
+        if (!isOwner && !hasBypass) {
+            player.sendMessage("§cYou cannot clone this locked map.");
+            event.setCancelled(true);
+            AuditLogger.log("denied_clone_or_scale", player.getName(), mapUUID);
+            return;
+        }
+
+        AuditLogger.log("cloned", player.getName(), mapUUID);
+    }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
