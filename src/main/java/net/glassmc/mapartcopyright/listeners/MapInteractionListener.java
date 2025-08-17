@@ -8,8 +8,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.MapMeta;
 
 public class MapInteractionListener implements Listener {
 
@@ -17,20 +17,24 @@ public class MapInteractionListener implements Listener {
     public void onCraftItem(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
-        ItemStack result = event.getInventory().getResult();
-        if (result == null || result.getType() != org.bukkit.Material.FILLED_MAP) return;
-        if (!(result.getItemMeta() instanceof MapMeta)) return;
+        CraftingInventory inv = event.getInventory();
+        ItemStack source = null;
+        for (ItemStack item : inv.getMatrix()) {
+            if (MapArtAPI.isLocked(item)) {
+                source = item;
+                break;
+            }
+        }
+        if (source == null) return;
 
-        if (!MapArtAPI.isLocked(result)) return;
-
-        String mapUUID = MapArtAPI.getMapUUID(result);
+        String mapUUID = MapArtAPI.getMapUUID(source);
         if (mapUUID == null) {
             player.sendMessage("§cThis map has no ownership data.");
             event.setCancelled(true);
             return;
         }
 
-        boolean isOwner = MapArtAPI.isOwner(player, result);
+        boolean isOwner = MapArtAPI.isOwner(player, source);
         boolean hasBypass = player.hasPermission("mapart.bypass") || player.hasPermission("mapart.admin");
         if (!isOwner && !hasBypass) {
             player.sendMessage("§cYou cannot clone this locked map.");
@@ -54,14 +58,16 @@ public class MapInteractionListener implements Listener {
         // Check if clicking the result slot
         if (event.getSlotType() != InventoryType.SlotType.RESULT) return;
 
-        ItemStack result = event.getCurrentItem();
-        if (result == null || result.getType() != org.bukkit.Material.FILLED_MAP) return;
-        if (!(result.getItemMeta() instanceof MapMeta)) return;
+        ItemStack source = null;
+        for (ItemStack item : event.getInventory().getContents()) {
+            if (MapArtAPI.isLocked(item)) {
+                source = item;
+                break;
+            }
+        }
+        if (source == null) return;
 
-        // Check if the map is locked
-        if (!MapArtAPI.isLocked(result)) return;
-
-        String mapUUID = MapArtAPI.getMapUUID(result);
+        String mapUUID = MapArtAPI.getMapUUID(source);
         if (mapUUID == null) {
             player.sendMessage("§cThis map has no ownership data.");
             event.setCancelled(true);
@@ -69,7 +75,7 @@ public class MapInteractionListener implements Listener {
         }
 
         // Check ownership or permissions
-        boolean isOwner = MapArtAPI.isOwner(player, result);
+        boolean isOwner = MapArtAPI.isOwner(player, source);
         boolean hasBypass = player.hasPermission("mapart.bypass") || player.hasPermission("mapart.admin");
         if (!isOwner && !hasBypass) {
             String actionWord = type == InventoryType.ANVIL ? "rename" : "clone or scale";
