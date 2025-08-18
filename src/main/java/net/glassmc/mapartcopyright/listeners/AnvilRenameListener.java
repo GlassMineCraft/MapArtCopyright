@@ -2,6 +2,9 @@ package net.glassmc.mapartcopyright.listeners;
 
 import net.glassmc.mapartcopyright.Audit.AuditLogger;
 import net.glassmc.mapartcopyright.api.MapArtAPI;
+import net.glassmc.mapartcopyright.util.StringSanitizer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -37,6 +40,19 @@ public class AnvilRenameListener implements Listener {
 
         Player player = (Player) event.getView().getPlayer();
         if (!canRename(player, input)) {
+            event.setResult(null);
+            return;
+        }
+
+        try {
+            Component name = StringSanitizer.parseComponent(rename, 32);
+            ItemStack result = input.clone();
+            MapMeta resultMeta = (MapMeta) result.getItemMeta();
+            resultMeta.displayName(name);
+            result.setItemMeta(resultMeta);
+            event.setResult(result);
+        } catch (IllegalArgumentException ex) {
+            player.sendMessage(Component.text(ex.getMessage(), NamedTextColor.RED));
             event.setResult(null);
         }
     }

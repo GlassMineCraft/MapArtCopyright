@@ -46,12 +46,18 @@ public class ChatInputListener implements Listener {
             case RENAME_MAP -> {
                 if (!PermissionUtil.canModify(player, item)) break;
 
-                String sanitized = StringSanitizer.clean(rawInput, 32);
-                meta.setDisplayName(sanitized);
-                player.sendMessage(
-                    Component.text("Map renamed to: ", NamedTextColor.GREEN)
-                        .append(Component.text(sanitized, NamedTextColor.WHITE))
-                );
+                try {
+                    Component name = StringSanitizer.parseComponent(rawInput, 32);
+                    meta.displayName(name);
+                    player.sendMessage(
+                        Component.text("Map renamed to: ", NamedTextColor.GREEN)
+                            .append(name)
+                    );
+                } catch (IllegalArgumentException ex) {
+                    player.sendMessage(Component.text(ex.getMessage(), NamedTextColor.RED));
+                    InputManager.clear(player);
+                    return;
+                }
             }
 
             case SET_CREDIT -> {
