@@ -22,19 +22,19 @@ public class EconomyUtil {
     public static boolean charge(Player player, double amount, boolean notify) {
         Economy eco = EconomyHandler.get();
         if (eco == null) {
-            if (notify) player.sendMessage("§cEconomy system not available.");
+            if (notify) player.sendMessage("§cTransaction failed: economy system not available.");
             return false;
         }
 
         if (eco.has(player, amount)) {
             eco.withdrawPlayer(player, amount);
-            if (notify) player.sendMessage("§aCharged §e$" + amount + "§a.");
+            if (notify) player.sendMessage("§aTransaction successful: charged §e$" + amount + "§a.");
             return true;
         } else {
             if (notify) {
                 double balance = eco.getBalance(player);
                 double needed = amount - balance;
-                player.sendMessage("§cInsufficient funds. You need §e$" + needed + "§c more.");
+                player.sendMessage("§cTransaction failed: insufficient funds. You need §e$" + needed + "§c more.");
             }
             return false;
         }
