@@ -27,5 +27,7 @@ public class MapDropListener implements Listener {
         meta.setLore(null);
         item.setItemMeta(meta);
         event.getEntity().setItemStack(item);
+        event.getEntity().setCustomName(null);
+        event.getEntity().setCustomNameVisible(false);
     }
 }
