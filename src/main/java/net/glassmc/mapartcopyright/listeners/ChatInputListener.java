@@ -10,6 +10,7 @@ import net.glassmc.mapartcopyright.util.StringSanitizer;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import org.bukkit.entity.Player;
@@ -63,11 +64,20 @@ public class ChatInputListener implements Listener {
             case SET_CREDIT -> {
                 if (!PermissionUtil.canModify(player, item, Component.text("You cannot set the creator on a locked map you do not own.", NamedTextColor.RED))) break;
 
-                String sanitized = StringSanitizer.clean(rawInput, 16);
-                meta.getPersistentDataContainer().set(LockUtil.CREDIT_KEY, PersistentDataType.STRING, sanitized);
+                Component creditComponent;
+                try {
+                    creditComponent = StringSanitizer.parseComponent(rawInput, 16);
+                } catch (IllegalArgumentException ex) {
+                    player.sendMessage(Component.text(ex.getMessage(), NamedTextColor.RED));
+                    InputManager.clear(player);
+                    return;
+                }
+
+                String serialized = LegacyComponentSerializer.legacySection().serialize(creditComponent);
+                meta.getPersistentDataContainer().set(LockUtil.CREDIT_KEY, PersistentDataType.STRING, serialized);
                 player.sendMessage(
                     Component.text("Creator set to: ", NamedTextColor.GREEN)
-                        .append(Component.text(sanitized, NamedTextColor.WHITE))
+                        .append(creditComponent)
                 );
             }
         }

@@ -1,13 +1,14 @@
 package net.glassmc.mapartcopyright.commands;
 
-import net.glassmc.mapartcopyright.util.LockUtil;
 import net.glassmc.mapartcopyright.util.CreditUtil;
-import net.glassmc.mapartcopyright.util.LoreUtil;
+import net.glassmc.mapartcopyright.util.StringSanitizer;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
-import org.bukkit.persistence.PersistentDataType;
 
 public class CreditCommand implements SubCommand {
 
@@ -33,7 +34,7 @@ public class CreditCommand implements SubCommand {
             return;
         }
 
-        String credit = String.join(" ", args).substring(args[0].length()).trim();
+        String raw = String.join(" ", args).substring(args[0].length()).trim();
         ItemStack item = player.getInventory().getItemInMainHand();
 
         if (item == null || item.getItemMeta() == null || !(item.getItemMeta() instanceof MapMeta)) {
@@ -41,9 +42,21 @@ public class CreditCommand implements SubCommand {
             return;
         }
 
+        Component creditComponent;
+        try {
+            creditComponent = StringSanitizer.parseComponent(raw, 16);
+        } catch (IllegalArgumentException ex) {
+            player.sendMessage(Component.text(ex.getMessage(), NamedTextColor.RED));
+            return;
+        }
+
+        String credit = LegacyComponentSerializer.legacySection().serialize(creditComponent);
         boolean success = CreditUtil.setCredit(item, credit, player);
         if (success) {
-            player.sendMessage("§aMap credited to: §f" + credit);
+            player.sendMessage(
+                Component.text("Map credited to: ", NamedTextColor.GREEN)
+                    .append(creditComponent)
+            );
             player.getInventory().setItemInMainHand(item);
         }
     }

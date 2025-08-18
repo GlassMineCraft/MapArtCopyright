@@ -12,7 +12,7 @@ A Paper plugin for Minecraft 1.21+ that protects and credits original map art cr
 - 🖼️ **Hologram Tag** — Displays the creator name below item frames (toggleable)
 - 📦 **GUI Menu** — 9x5 menu to manage name, credit, lock/unlock, and toggles
 - 💬 **Chat Input** — Rename or credit a map via typed input after clicking GUI icons
-- 🌈 **RGB Name Colors** — Use `<#RRGGBB>` tags or legacy `&#RRGGBB` codes when renaming
+- 🌈 **RGB Name Colors** — Use `<#RRGGBB>` tags or legacy `&#RRGGBB` codes when renaming or setting creator
 - 🔍 **Admin Info Command** — View a map’s UUID, creator, and lock status
 - 🔑 **Permission-Based Access** — Fully configurable with permissions per feature
 
