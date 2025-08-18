@@ -61,8 +61,7 @@ public class UnlockCommand implements SubCommand {
 
         if (EconomyUtil.isEnabled() && !player.hasPermission("mapart.free")) {
             double cost = EconomyUtil.getCost("unlock");
-            if (!EconomyUtil.charge(player, cost)) {
-                player.sendMessage("§cYou need §e$" + cost + "§c to unlock this map.");
+            if (!EconomyUtil.charge(player, cost, true)) {
                 return;
             }
         }
