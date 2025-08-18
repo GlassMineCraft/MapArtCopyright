@@ -28,9 +28,14 @@ public class EconomyUtil {
 
         if (eco.has(player, amount)) {
             eco.withdrawPlayer(player, amount);
+            if (notify) player.sendMessage("§aCharged §e$" + amount + "§a.");
             return true;
         } else {
-            if (notify) player.sendMessage("§cInsufficient funds. You need §e$" + amount);
+            if (notify) {
+                double balance = eco.getBalance(player);
+                double needed = amount - balance;
+                player.sendMessage("§cInsufficient funds. You need §e$" + needed + "§c more.");
+            }
             return false;
         }
     }

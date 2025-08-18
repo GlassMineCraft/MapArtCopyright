@@ -48,8 +48,7 @@ public class LockCommand implements SubCommand {
         MapMeta mapMeta = (MapMeta) item.getItemMeta();
         if (EconomyUtil.isEnabled() && !player.hasPermission("mapart.free")) {
             double cost = EconomyUtil.getCost("lock");
-            if (!EconomyUtil.charge(player, cost)) {
-                player.sendMessage("§cYou need §e$" + cost + "§c to lock a map.");
+            if (!EconomyUtil.charge(player, cost, true)) {
                 return;
             }
         }
