@@ -48,6 +48,10 @@ permissions:
     description: Toggle creator hologram in GUI
     default: true
 
+  mapart.toggle.itemframe:
+    description: Toggle item frame locking in GUI
+    default: true
+
 mapart.bypass:
   description: Allows bypassing map ownership restrictions
   default: op
@@ -78,8 +82,9 @@ mapart.*:
     mapart.credit: true
     mapart.rename: true
     mapart.menu: true
-    mapart.toggle.displayname: true
-    mapart.toggle.hologram: true
-    mapart.bypass: true
-    mapart.info: true
-    mapart.audit: true
+      mapart.toggle.displayname: true
+      mapart.toggle.hologram: true
+      mapart.toggle.itemframe: true
+      mapart.bypass: true
+      mapart.info: true
+      mapart.audit: true

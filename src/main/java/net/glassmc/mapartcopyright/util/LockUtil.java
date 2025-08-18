@@ -11,6 +11,7 @@ public class LockUtil {
     public static final NamespacedKey MAPART_NAME_KEY = new NamespacedKey(MapArtCopyright.getInstance(), "map_name");
     public static final NamespacedKey CREATOR_UUID_KEY = new NamespacedKey(MapArtCopyright.getInstance(), "creator_uuid");
     public static final NamespacedKey MAPART_NAME_VISIBLE_KEY = new NamespacedKey(MapArtCopyright.getInstance(), "name_visible");
+    public static final NamespacedKey ITEMFRAME_LOCK_KEY = new NamespacedKey(MapArtCopyright.getInstance(), "frame_locked");
 
 
 }

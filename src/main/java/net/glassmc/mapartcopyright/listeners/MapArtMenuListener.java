@@ -133,6 +133,22 @@ public class MapArtMenuListener implements Listener {
             metaChanged = true;
         }
 
+        // Toggle Item Frame Locking
+        if (displayName.contains("Item Frame Lock")) {
+            if (!player.hasPermission("mapart.toggle.itemframe")) {
+                player.sendMessage(Component.text("You don’t have permission to toggle item frame locks.", NamedTextColor.RED));
+                return;
+            }
+
+            byte current = meta.getPersistentDataContainer().getOrDefault(
+                    LockUtil.ITEMFRAME_LOCK_KEY, PersistentDataType.BYTE, (byte) 0);
+            byte newState = current == 1 ? (byte) 0 : (byte) 1;
+
+            meta.getPersistentDataContainer().set(LockUtil.ITEMFRAME_LOCK_KEY, PersistentDataType.BYTE, newState);
+            player.sendMessage(Component.text("Item frame lock " + (newState == 1 ? "enabled." : "disabled."), NamedTextColor.GRAY));
+            metaChanged = true;
+        }
+
         if (metaChanged) {
             map.setItemMeta(meta);
             LoreUtil.updateMapLore(map);

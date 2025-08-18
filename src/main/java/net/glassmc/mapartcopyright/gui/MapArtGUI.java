@@ -53,6 +53,15 @@ public class MapArtGUI {
         // Get meta to read toggle states
         MapMeta meta = (MapMeta) mapItem.getItemMeta();
 
+        // Toggle Item Frame Lock
+        byte frameLockState = meta.getPersistentDataContainer().getOrDefault(
+            LockUtil.ITEMFRAME_LOCK_KEY, PersistentDataType.BYTE, (byte) 0);
+        boolean frameLocked = frameLockState == 1;
+        Material frameLockMaterial = frameLocked ? Material.RED_STAINED_GLASS_PANE : Material.LIME_STAINED_GLASS_PANE;
+        String frameLockText = "§eToggle Item Frame Lock";
+        String frameLockLore = "§7Click to " + (frameLocked ? "§aUnlock" : "§cLock") + " item frames";
+        gui.setItem(23, createItem(frameLockMaterial, frameLockText, frameLockLore));
+
         // Toggle Map Name Visibility
         boolean nameVisible = meta.hasDisplayName();
         Material nameMaterial = nameVisible ? Material.LIME_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE;
