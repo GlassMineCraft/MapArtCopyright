@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -52,6 +53,12 @@ public class MapFrameListener implements Listener {
             },
             2L
         );
+    }
+
+    @EventHandler
+    public void onFrameDetach(HangingBreakEvent event) {
+        if (!(event.getEntity() instanceof ItemFrame frame)) return;
+        HologramUtil.remove(frame);
     }
 
     @EventHandler
