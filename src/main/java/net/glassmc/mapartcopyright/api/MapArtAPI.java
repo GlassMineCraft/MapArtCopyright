@@ -35,7 +35,8 @@ public class MapArtAPI {
      */
     public static boolean isOwner(ItemStack item, UUID playerUUID) {
         String mapUUID = getMapUUID(item);
-        return mapUUID != null && OwnershipDatabase.isOwner(playerUUID, mapUUID);
+        boolean dbOwner = mapUUID != null && OwnershipDatabase.isOwner(playerUUID, mapUUID);
+        return dbOwner || verifyCreator(item, playerUUID);
     }
 
     /**
@@ -50,8 +51,7 @@ public class MapArtAPI {
      * Checks if the player is the registered owner of the map.
      */
     public static boolean isOwner(Player player, ItemStack item) {
-        UUID owner = getOwner(item);
-        return owner != null && owner.equals(player.getUniqueId());
+        return isOwner(item, player.getUniqueId());
     }
 
     /**
