@@ -31,7 +31,7 @@ public class CreditUtil {
 
         boolean locked = MapArtAPI.isLocked(item);
         boolean isOwner = MapArtAPI.isOwner(player, item);
-        boolean isAdmin = player.hasPermission("mapart.admin");
+        boolean isAdmin = player.hasPermission("mapart.bypass");
 
         if (locked && !isOwner && !isAdmin) {
             player.sendMessage("§cYou cannot change the creator on a locked map you do not own.");
