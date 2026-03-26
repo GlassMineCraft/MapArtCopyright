@@ -10,6 +10,7 @@ import net.glassmc.mapartcopyright.listeners.MapFrameListener;
 import net.glassmc.mapartcopyright.listeners.MapInteractionListener;
 import net.glassmc.mapartcopyright.listeners.AnvilRenameListener;
 import net.glassmc.mapartcopyright.listeners.MapDropListener;
+import net.glassmc.mapartcopyright.metrics.Metrics;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
@@ -24,6 +25,12 @@ public final class MapArtCopyright extends JavaPlugin {
         instance = this;
         saveDefaultConfig();
         OwnershipDatabase.connect();
+
+        int pluginId = getConfig().getInt("metrics.plugin-id", 0);
+        if (pluginId > 0) {
+            new Metrics(this, pluginId);
+            getLogger().info("bStats metrics enabled (plugin ID: " + pluginId + ").");
+        }
         
         getLogger().info("MapArtCopyright plugin enabled.");
 

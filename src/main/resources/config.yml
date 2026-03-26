@@ -46,6 +46,9 @@ messages:
     lock-cost: 100.0
     unlock-cost: 50.0
 
+metrics:
+  plugin-id: 0  # Set to your bStats plugin ID from https://bstats.org (0 = disabled)
+
 # Optional future features
 features:
   enable-permissions: true

@@ -26,6 +26,34 @@ public class MapFrameListener implements Listener {
         Player player = event.getPlayer();
         ItemStack frameItem = frame.getItem();
 
+        // Shift-click on a frame containing a locked map toggles the frame lock state
+        if (player.isSneaking() && frameItem.getType() == Material.FILLED_MAP && MapArtAPI.isLocked(frameItem)) {
+            if (!player.hasPermission("mapart.toggle.itemframe")) {
+                player.sendMessage("§cYou don't have permission to toggle item frame locks.");
+                event.setCancelled(true);
+                return;
+            }
+            if (!(frameItem.getItemMeta() instanceof MapMeta meta)) return;
+            byte current = meta.getPersistentDataContainer().getOrDefault(
+                    LockUtil.ITEMFRAME_LOCK_KEY, PersistentDataType.BYTE, (byte) 0);
+            byte toggled = (current == 1) ? (byte) 0 : (byte) 1;
+            meta.getPersistentDataContainer().set(LockUtil.ITEMFRAME_LOCK_KEY, PersistentDataType.BYTE, toggled);
+            frameItem.setItemMeta(meta);
+            frame.setItem(frameItem);
+            frame.setFixed(toggled == 1);
+            if (toggled == 1) {
+                player.sendMessage("§cItem frame locked.");
+            } else {
+                player.sendMessage("§aItem frame unlocked.");
+            }
+            String mapUUID = MapArtAPI.getMapUUID(frameItem);
+            if (mapUUID != null) {
+                AuditLogger.log("frame_lock_toggled", player.getName(), mapUUID);
+            }
+            event.setCancelled(true);
+            return;
+        }
+
         // Allow any player to remove a map (no ownership check for removal)
         // Handle map insertion (spawning holograms) and log removals
         Bukkit.getScheduler().runTaskLater(
