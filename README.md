@@ -58,6 +58,11 @@ Developed by GlassMC
 Map art deserves proper credit 🖼️💡
 ---
 
+
+## 🔁 Rebranding
+
+Need to migrate legacy MarriageMaster branding to Best Friends Plugin? See `REBRANDING_CHECKLIST.md` for a practical rename + attribution checklist.
+
 ## 🔐 Permissions
 
 Defined in `plugin.yml`. Use LuckPerms or another permissions manager to assign:

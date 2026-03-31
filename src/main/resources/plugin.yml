@@ -2,7 +2,9 @@ name: MapArtCopyright
 version: 1.1.1
 main: net.glassmc.mapartcopyright.MapArtCopyright
 api-version: 1.21
-author: GlassMC
+authors:
+  - GlassMC
+  - Original MarriageMaster Developers
 description: Adds copyright, naming, and locking features for map art
 
 
