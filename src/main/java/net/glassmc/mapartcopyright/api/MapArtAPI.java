@@ -3,6 +3,9 @@ package net.glassmc.mapartcopyright.api;
 import net.glassmc.mapartcopyright.database.OwnershipDatabase;
 import net.glassmc.mapartcopyright.util.LockUtil;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
@@ -64,7 +67,9 @@ public class MapArtAPI {
     public static Optional<String> getStoredMapName(ItemStack item) {
         if (item == null || !(item.getItemMeta() instanceof MapMeta meta)) return Optional.empty();
         if (!meta.hasDisplayName()) return Optional.empty();
-        return Optional.ofNullable(meta.getDisplayName());
+        Component displayName = meta.displayName();
+        if (displayName == null) return Optional.empty();
+        return Optional.of(PlainTextComponentSerializer.plainText().serialize(displayName));
     }
     
     public static boolean verifyCreator(ItemStack item, UUID uuid) {

@@ -40,11 +40,11 @@ messages:
   toggled-hologram-on: "§aCreator tag shown."
   toggled-hologram-off: "§7Creator tag hidden."
 
-  
-  economy:
-    enabled: true
-    lock-cost: 100.0
-    unlock-cost: 50.0
+# Economy settings (requires Vault + an economy provider)
+economy:
+  enabled: true
+  lock-cost: 100.0
+  unlock-cost: 50.0
 
 # Optional future features
 features:
