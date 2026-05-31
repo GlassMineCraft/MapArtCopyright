@@ -137,7 +137,7 @@ public class MapArtMenuListener implements Listener {
                 player.sendMessage(Component.text("Map name hidden.", NamedTextColor.GRAY));
             } else {
                 meta.displayName(Component.text("Untitled Map"));
-                meta.getPersistentDataContainer().set(LockUtil.MAPART_NAME_KEY, PersistentDataType.BYTE, (byte) 1);
+                meta.getPersistentDataContainer().set(LockUtil.MAPART_NAME_VISIBLE_KEY, PersistentDataType.BYTE, (byte) 1);
                 player.sendMessage(Component.text("Map name shown.", NamedTextColor.GREEN));
             }
             metaChanged = true;

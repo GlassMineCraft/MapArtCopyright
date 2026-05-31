@@ -1,7 +1,6 @@
 package net.glassmc.mapartcopyright.util;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Location;
 import org.bukkit.entity.Display;
@@ -25,7 +24,6 @@ public class HologramUtil {
             display.setBillboard(Display.Billboard.CENTER);
             display.setShadowed(true);
             display.setDefaultBackground(false);
-            display.getShadowRadius();
             display.getPersistentDataContainer().set(
                     LockUtil.HOLOGRAM_TAG_KEY, PersistentDataType.STRING, TAG);
         });
