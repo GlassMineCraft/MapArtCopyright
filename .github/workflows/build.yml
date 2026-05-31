@@ -5,6 +5,10 @@ on:
     branches: ["**"]
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,7 +25,22 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        run: mvn -B --no-transfer-progress clean package
+        run: mvn -B --no-transfer-progress clean package 2>&1 | tee build.log
+
+      - name: Report build failure on PR
+        if: failure() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '## :x: Build failed'
+            echo
+            echo 'Maven error excerpt (from `build.log`):'
+            echo '```'
+            grep -nE "ERROR|BUILD FAILURE|Could not|Failed to|error:|cannot find symbol|symbol:|location:|\.java:\[|No suitable|Non-resolvable" build.log | tail -n 80 || tail -n 80 build.log
+            echo '```'
+          } > comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md
 
       - name: Upload plugin jar
         if: success()
