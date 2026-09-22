@@ -1,30 +1,20 @@
 package net.glassmc.mapartcopyright.listeners;
 
-import net.glassmc.mapartcopyright.util.LockUtil;
-import org.bukkit.Material;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
+import net.glassmc.mapartcopyright.api.MapArtAPI;
+import net.glassmc.mapartcopyright.util.MapMetadata;
+import net.glassmc.mapartcopyright.util.LoreUtil;
+import org.bukkit.event.*;
 import org.bukkit.event.entity.ItemSpawnEvent;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
-import org.bukkit.persistence.PersistentDataType;
 
-/**
- * Listener to clear visible map metadata when the map item is dropped.
- */
+/** Retain item metadata, and repair legacy dropped items from the stored canonical title. */
 public class MapDropListener implements Listener {
-
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onItemSpawn(ItemSpawnEvent event) {
-        ItemStack item = event.getEntity().getItemStack();
-        if (item.getType() != Material.FILLED_MAP) return;
-        if (!(item.getItemMeta() instanceof MapMeta meta)) return;
-
-        // Only sanitize maps tracked by the plugin (those with a stored UUID).
-        if (!meta.getPersistentDataContainer().has(LockUtil.MAPART_ID_KEY, PersistentDataType.STRING)) return;
-
-        meta.displayName(null);
-        meta.lore(null);
+        var item = event.getEntity().getItemStack();
+        if (MapArtAPI.getMapUUID(item) == null || !(item.getItemMeta() instanceof MapMeta meta)) return;
+        MapMetadata.render(meta);
+        LoreUtil.apply(meta);
         item.setItemMeta(meta);
         event.getEntity().setItemStack(item);
     }

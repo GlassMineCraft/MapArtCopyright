@@ -1,40 +1,52 @@
 package net.glassmc.mapartcopyright.util;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.Display;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.ItemFrame;
-import org.bukkit.entity.TextDisplay;
+import org.bukkit.entity.*;
 import org.bukkit.persistence.PersistentDataType;
+import java.util.UUID;
 
-public class HologramUtil {
+public final class HologramUtil {
+    private HologramUtil() {}
 
-    private static final String TAG = "mapart_holo";
-
-    public static void spawn(ItemFrame frame, String legacyText) {
-        // Offset slightly below the item frame so the text sits in front of it
-        Location loc = frame.getLocation().clone().add(0.5, -0.75, 0.5);
-
-        Component text = LegacyComponentSerializer.legacySection().deserialize(legacyText);
-
-        frame.getWorld().spawn(loc, TextDisplay.class, display -> {
-            display.text(text);
-            display.setBillboard(Display.Billboard.CENTER);
-            display.setShadowed(true);
-            display.setDefaultBackground(false);
-            display.getPersistentDataContainer().set(
-                    LockUtil.HOLOGRAM_TAG_KEY, PersistentDataType.STRING, TAG);
+    public static void spawn(ItemFrame frame, String text) {
+        remove(frame);
+        Location location = frame.getLocation().clone().add(0, -0.65, 0)
+                .add(frame.getFacing().getDirection().multiply(0.12));
+        TextDisplay display = frame.getWorld().spawn(location, TextDisplay.class, entity -> {
+            entity.text(MapMetadata.LEGACY.deserialize(text));
+            entity.setBillboard(Display.Billboard.CENTER);
+            entity.setShadowed(true);
+            entity.setDefaultBackground(false);
+            entity.setPersistent(false);
+            entity.getPersistentDataContainer().set(LockUtil.HOLOGRAM_TAG_KEY, PersistentDataType.STRING, frame.getUniqueId().toString());
         });
+        frame.getPersistentDataContainer().set(LockUtil.HOLOGRAM_ENTITY_KEY, PersistentDataType.STRING, display.getUniqueId().toString());
     }
 
     public static void remove(ItemFrame frame) {
-        frame.getNearbyEntities(1.0, 1.5, 1.0).stream()
-                .filter(e -> e instanceof TextDisplay)
-                .map(e -> (TextDisplay) e)
-                .filter(e -> TAG.equals(e.getPersistentDataContainer()
-                        .get(LockUtil.HOLOGRAM_TAG_KEY, PersistentDataType.STRING)))
-                .forEach(Entity::remove);
+        String frameId = frame.getUniqueId().toString();
+        String displayId = frame.getPersistentDataContainer().get(LockUtil.HOLOGRAM_ENTITY_KEY, PersistentDataType.STRING);
+        if (displayId != null) {
+            try {
+                Entity display = Bukkit.getEntity(UUID.fromString(displayId));
+                if (belongsTo(display, frameId)) display.remove();
+            } catch (IllegalArgumentException ignored) { }
+        }
+        // Reconcile duplicate displays left by a previous reload, without touching adjacent frames.
+        for (Entity entity : frame.getNearbyEntities(2, 2, 2)) if (belongsTo(entity, frameId)) entity.remove();
+        frame.getPersistentDataContainer().remove(LockUtil.HOLOGRAM_ENTITY_KEY);
+    }
+
+    public static boolean belongsTo(Entity entity, String frameId) {
+        return entity instanceof TextDisplay && frameId.equals(entity.getPersistentDataContainer().get(LockUtil.HOLOGRAM_TAG_KEY, PersistentDataType.STRING));
+    }
+
+    public static void removeLegacy(Entity entity) {
+        if (entity instanceof TextDisplay && "mapart_holo".equals(entity.getPersistentDataContainer()
+                .get(LockUtil.HOLOGRAM_TAG_KEY, PersistentDataType.STRING))) entity.remove();
+        // Pre-TextDisplay versions used the credit key to mark invisible armor stands.
+        if (entity instanceof ArmorStand && "mapart_holo".equals(entity.getPersistentDataContainer()
+                .get(LockUtil.CREDIT_KEY, PersistentDataType.STRING))) entity.remove();
     }
 }

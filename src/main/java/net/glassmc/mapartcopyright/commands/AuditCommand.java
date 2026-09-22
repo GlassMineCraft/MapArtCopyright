@@ -1,91 +1,55 @@
 package net.glassmc.mapartcopyright.commands;
 
 import net.glassmc.mapartcopyright.MapArtCopyright;
+import net.glassmc.mapartcopyright.Audit.AuditLogger;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.util.UUID;
 
 public class AuditCommand implements SubCommand {
+    @Override public String getName() { return "audit"; }
 
-    private static final int MAX_LINES = 100;
-
-    @Override
-    public String getName() {
-        return "audit";
-    }
-
-    @Override
-    public void execute(CommandSender sender, String[] args) {
+    @Override public void execute(CommandSender sender, String[] args) {
         if (!sender.hasPermission("mapart.audit")) {
             sender.sendMessage("§cYou do not have permission to view audits.");
             return;
         }
-
-        if (args.length < 2) {
+        if (args.length < 2 || args.length > 3) {
             sender.sendMessage("§cUsage: /mapart audit <map-uuid> [page]");
             return;
         }
-
-        String uuid = args[1];
-        int page = 1;
-        if (args.length >= 3) {
+        final UUID id;
+        final int page;
+        try {
+            id = UUID.fromString(args[1]);
+            if (!id.toString().equalsIgnoreCase(args[1])) throw new IllegalArgumentException();
+            page = args.length == 3 ? Integer.parseInt(args[2]) : 1;
+            if (page < 1 || page > 1000) throw new IllegalArgumentException();
+        } catch (IllegalArgumentException ex) {
+            sender.sendMessage("§cEnter a complete map UUID and a page between 1 and 1000.");
+            return;
+        }
+        var plugin = MapArtCopyright.getInstance();
+        var folder = plugin.getDataFolder().toPath();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
-                page = Integer.parseInt(args[2]);
-                if (page < 1) {
-                    sender.sendMessage("§cPage number must be positive.");
-                    return;
-                }
-            } catch (NumberFormatException e) {
-                sender.sendMessage("§cInvalid page number.");
-                return;
+                var result = AuditLogger.recent(folder, id, page);
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (sender instanceof Player player && !player.isOnline()) return;
+                    if (!sender.hasPermission("mapart.audit")) return;
+                    if (result.lines().isEmpty()) {
+                        sender.sendMessage("§7No entries on this page. Available pages: " + result.totalPages());
+                        return;
+                    }
+                    sender.sendMessage("§6Audit for §e" + id + "§6 (newest first, page " + page + "/" + result.totalPages() + "):");
+                    result.lines().forEach(line -> sender.sendMessage("§7" + line));
+                });
+            } catch (IOException ex) {
+                plugin.getLogger().warning("Unable to read audit log: " + ex.getMessage());
+                Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage("§cFailed to read the audit log."));
             }
-        }
-
-        File logFile = new File(MapArtCopyright.getInstance().getDataFolder(), "audit.log");
-
-        if (!logFile.exists()) {
-            sender.sendMessage("§eNo audit log found.");
-            return;
-        }
-
-        List<String> matching = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
-            String line;
-            while ((line = reader.readLine()) != null && matching.size() < MAX_LINES) {
-                if (line.contains(uuid)) {
-                    matching.add(line);
-                }
-            }
-        } catch (IOException e) {
-            sender.sendMessage("§cFailed to read audit log.");
-            MapArtCopyright.getInstance().getLogger().severe("[AuditCommand] Error reading audit log: " + e.getMessage());
-            e.printStackTrace();
-            return;
-        }
-
-        if (matching.isEmpty()) {
-            sender.sendMessage("§7No audit entries found for §f" + uuid);
-            return;
-        }
-
-        int linesPerPage = 10;
-        int totalPages = (int) Math.ceil((double) matching.size() / linesPerPage);
-        if (page > totalPages) {
-            sender.sendMessage("§cPage " + page + " does not exist. Max page: " + totalPages);
-            return;
-        }
-
-        sender.sendMessage("§6Audit entries for §e" + uuid + "§6 (Page " + page + "/" + totalPages + "):");
-        int start = (page - 1) * linesPerPage;
-        int end = Math.min(start + linesPerPage, matching.size());
-        for (int i = start; i < end; i++) {
-            sender.sendMessage("§7" + matching.get(i));
-        }
-        if (page < totalPages) {
-            sender.sendMessage("§7Use /mapart audit " + uuid + " " + (page + 1) + " for the next page.");
-        }
+        });
     }
 }

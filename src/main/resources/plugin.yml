@@ -1,5 +1,5 @@
 name: MapArtCopyright
-version: 1.2.0
+version: 1.2.1
 main: net.glassmc.mapartcopyright.MapArtCopyright
 api-version: 1.21
 author: GlassMC
@@ -57,6 +57,10 @@ permissions:
     description: Allows bypassing map ownership restrictions
     default: op
 
+  mapart.free:
+    description: Exempts players from map action fees
+    default: op
+
   mapart.info:
     description: Allows viewing UUID and metadata of a map
     default: op
@@ -91,6 +95,7 @@ permissions:
       mapart.toggle.hologram: true
       mapart.toggle.itemframe: true
       mapart.bypass: true
+      mapart.free: true
       mapart.info: true
       mapart.audit: true
       mapart.verify: true

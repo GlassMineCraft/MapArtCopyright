@@ -14,8 +14,11 @@ import net.glassmc.mapartcopyright.listeners.MapDropListener;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.entity.ItemFrame;
+import net.glassmc.mapartcopyright.util.InputManager;
+import net.glassmc.mapartcopyright.util.HologramUtil;
 
-public final class MapArtCopyright extends JavaPlugin {
+public class MapArtCopyright extends JavaPlugin {
 
     private static MapArtCopyright instance;
 
@@ -23,7 +26,9 @@ public final class MapArtCopyright extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
-        OwnershipDatabase.connect();
+        if (!OwnershipDatabase.connect()) {
+            getLogger().severe("Ownership database is unavailable. Protection stays active; registered-map edits will be refused.");
+        }
         
         getLogger().info("MapArtCopyright plugin enabled.");
 
@@ -41,15 +46,17 @@ public final class MapArtCopyright extends JavaPlugin {
         if (!EconomyHandler.setup()) {
             getLogger().warning("Vault not found or no economy provider detected.");
         }
-        if (Bukkit.getPluginManager().getPlugin("CMILib") == null) {
-            getLogger().warning("CMILib not found! Some features may not work properly.");
-        } else {
-            getLogger().info("CMILib detected and hooked.");
-        }
+        Bukkit.getScheduler().runTask(this, MapFrameListener::initializeLoadedFrames);
     }
 
     @Override
     public void onDisable() {
+        InputManager.clearAll();
+        for (var world : Bukkit.getWorlds()) {
+            for (var entity : world.getEntities()) {
+                if (entity instanceof ItemFrame frame) HologramUtil.remove(frame);
+            }
+        }
         OwnershipDatabase.close();
         getLogger().info("MapArtCopyright plugin disabled.");
     }

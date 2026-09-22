@@ -8,7 +8,6 @@ database:
   type: h2  # mysql, sqlite, or h2
 
 mysql:
-  enabled: false
   host: localhost
   port: 3306
   database: mapart
@@ -18,9 +17,9 @@ mysql:
   allowPublicKeyRetrieval: true
 
 settings:
-  default-lock-enabled: true         # Should maps be locked when /mapart lock is used
   default-hologram-visible: true     # Show creator hologram under item frame by default
-  require-display-name: false        # Force display names on all locked maps
+  require-display-name: false        # Require a visible title when locking; prevent hiding names
+  chat-timeout-seconds: 60           # Valid range: 5–300; moving the item cancels input
 
 gui:
   title: "§8MapArt Manager"          # Title for the GUI menu
@@ -46,10 +45,7 @@ economy:
   lock-cost: 100.0
   unlock-cost: 50.0
 
-# Optional future features
+# Feature switches
 features:
-  enable-permissions: true
   enable-map-lore-updates: true
   enable-gui: true
-
-  

@@ -1,74 +1,62 @@
-# 🖼️ MapArtCopyright
-A Paper plugin for Minecraft 1.21+ that protects and credits original map art creations. Add locking, creator attribution, GUI management, and UUID tracking to ensure your in-game art stays yours.
+# MapArtCopyright
 
----
+A Paper plugin that registers ownership of Minecraft map art, controls copying and editing, and displays titles and creator credits in inventories and item frames.
 
-## ✨ Features
+## Requirements and build
 
-- 🔐 **Lock/Unlock Maps** — Prevents duplication or tampering of map art
-- 🧠 **Persistent Metadata** — Stores creator name, custom display name, and UUID
-- 🧾 **UUID Assignment** — Assigns a unique identifier to each locked map
-- 🎨 **Inventory Display** — Shows creator name and title when hovering over maps
-- 🖼️ **Hologram Tag** — Displays the creator name below item frames (toggleable)
-- 📦 **GUI Menu** — 9x5 menu to manage name, credit, lock/unlock, and toggles
-- 💬 **Chat Input** — Rename or credit a map via typed input after clicking GUI icons
-- 🌈 **RGB Name Colors** — Use `<#RRGGBB>` tags or legacy `&#RRGGBB` codes when renaming or setting creator
-- 🔍 **Admin Info Command** — View a map’s UUID, creator, and lock status
-- 🔑 **Permission-Based Access** — Fully configurable with permissions per feature
+- Java 21.
+- Paper 1.21.11, the API targeted by this build. Other server versions need separate validation.
+- Vault. An economy provider is required when `economy.enabled` is true and an action has a nonzero fee.
+- Maven 3.9+ to build from source. CMILib is optional; these features do not require it.
 
----
+```sh
+mvn --batch-mode --no-transfer-progress clean verify
+```
 
-## 🔧 Commands
+Install `target/mapartcopyright-1.2.1.jar`. The JAR bundles H2, SQLite, and MySQL JDBC drivers. Tests use MockBukkit, JUnit, real H2/SQLite databases, and a mocked Vault economy provider. GitHub Actions runs the tests and uploads the packaged JAR.
 
-| Command                      | Description                               | Permission         |
-|-----------------------------|-------------------------------------------|--------------------|
-| `/mapart lock`              | Locks the map in your hand                | `mapart.lock`      |
-| `/mapart unlock`            | Unlocks the map (retains metadata)        | `mapart.unlock`    |
-| `/mapart credit <name>`     | Assigns a creator credit to the map       | `mapart.credit`    |
-| `/mapart name <name>`       | Renames the map display name              | `mapart.rename`    |
-| `/mapart menu`              | Opens the management GUI                  | `mapart.menu`      |
-| `/mapart info`              | View UUID and metadata of held map        | `mapart.info` (OP) |
+## Ownership and protection
 
----
+The first successful lock assigns a map UUID and saves its owner in the database. Later locks preserve that owner. Repeating a lock or unlock that is already in the requested state does not charge a fee.
 
-## 🖥️ GUI Controls
+**Unlocking permits copying; it does not transfer ownership.** Registered titles, credits, and protection settings remain editable only by the database owner or a player with `mapart.bypass`. The creator UUID is attribution, not a second source of ownership. Display credit can name a collaborator without granting that person control.
 
-Open with `/mapart menu`  
-Features:
-- 🧠 Rename Map (Anvil icon)
-- ✍️ Set Creator (Book & Quill)
-- 👤 Auto-Credit (Player Head)
-- 🔒 Lock (Item Frame)
-- 🗺️ Unlock (Filled Map)
-- 💡 Toggle Map Name (Sea Lantern)
-- 💡 Toggle Hologram (Redstone Torch)
-- ❌ Close Menu (Barrier)
+Locked maps reject unauthorized crafting, cartography, anvil renaming, and frame removal. Automatic crafters cannot process locked maps because there is no player to authorize. Owners can retrieve their maps from protected frames. Remove the map first before breaking its supporting block. An unlocked map can retain separate frame protection.
 
-🧠 Roadmap Ideas
-/mapart claim integration
+Protection follows the plugin metadata on each item stack. Unlocking one copy does not remotely update other copies already in the world, and the plugin does not prevent recreating an image independently or override trusted administrative plugins.
 
-Export/import system
+## Commands
 
-Duplicate protection for UUID reuse
+All commands require `mapart.use` in addition to their individual permission.
 
-MapArt whitelist or shareable ownership
+| Command | Purpose | Permission |
+|---|---|---|
+| `/mapart lock` | Register and lock the held filled map | `mapart.lock` |
+| `/mapart unlock` | Permit copying; retain ownership and metadata | `mapart.unlock` |
+| `/mapart name <text>` | Change the canonical title | `mapart.rename` |
+| `/mapart credit <text>` | Change the displayed creator credit | `mapart.credit` |
+| `/mapart menu` | Open the management menu | `mapart.menu` |
+| `/mapart info` | Inspect map metadata | `mapart.info` |
+| `/mapart verify [player]` | Check registered ownership and show attribution | `mapart.verify`; `mapart.verify.others` for another player |
+| `/mapart audit <map-uuid> [page]` | Read retained audit entries, newest first | `mapart.audit` |
+| `/mapart export` | Write `ownership_export.csv` in the plugin data directory | `mapart.export` |
 
-👤 Credits
-Developed by GlassMC
-Map art deserves proper credit 🖼️💡
----
+The menu supports renaming, creator credit, locking, unlocking, and toggling title visibility, holograms, and frame protection. Toggles require `mapart.toggle.displayname`, `mapart.toggle.hologram`, or `mapart.toggle.itemframe`. Permissions and their defaults are listed in [plugin.yml](src/main/resources/plugin.yml).
 
-## 🔐 Permissions
+`mapart.free` exempts a player from fees. `mapart.bypass` grants administrative ownership bypass. Both default to operators; grant them deliberately.
 
-Defined in `plugin.yml`. Use LuckPerms or another permissions manager to assign:
-```yaml
-mapart.use
-mapart.lock
-mapart.unlock
-mapart.credit
-mapart.rename
-mapart.menu
-mapart.toggle.displayname
-mapart.toggle.hologram
-mapart.info
+Titles support up to 32 visible UTF-16 code units and credits up to 16. Supported formatting includes `&aGreen`, `&#55aaffBlue`, `<#55aaff>Blue</#55aaff>`, decorations, and closed `<gradient:#ff0000:#0000ff>Text</gradient>` tags. GUI chat input accepts `cancel`, expires after the configured timeout, and is canceled if the item moves or changes. Hiding a title preserves its canonical value.
 
+## Configuration and operations
+
+See [config.yml](src/main/resources/config.yml). Database selection uses `database.type`: `h2` (default), `sqlite`, or `mysql`. H2 uses `mapart.mv.db`, SQLite uses `Mapart.db`, and all backends use the existing `map_ownership` schema. MySQL needs a reachable server and a provisioned database.
+
+Active settings include default hologram visibility, required visible titles, chat timeout, menu title/materials, configurable action messages, economy fees, GUI enablement, and lore updates. Permission checks always remain active.
+
+Successful metadata changes and authorization decisions are written to UTF-8 audit logs. Entries include player UUIDs where available. An `*_allowed` event records authorization before vanilla processing; it does not claim that a completed item transfer was observed. Logs rotate at 5 MiB with three backups; audit pages contain ten entries, newest first, with at most 1,000 pages available per query.
+
+If a database write fails after a successful payment, the plugin attempts a refund. Failed refunds are recorded in `refunds-pending.log` with an operation ID for administrator reconciliation. The game inventory, JDBC database, and external economy provider cannot form a single crash-atomic transaction.
+
+Read [the 1.2.1 upgrade and validation notes](docs/UPGRADE-1.2.1.md) before replacing an existing installation.
+
+Developed by GlassMC.
