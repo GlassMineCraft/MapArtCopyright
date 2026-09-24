@@ -21,6 +21,9 @@ public class HelpCommand implements SubCommand {
         sender.sendMessage("§e/mapart audit <map-uuid> [page] §7- View audit logs for a map");
         sender.sendMessage("§e/mapart export §7- Export ownership records (mapart.export)");
         sender.sendMessage("§e/mapart menu §7- Open the GUI for managing the held map");
+        sender.sendMessage("§e/mapart wall create <2x1|2x2|2x3|3x3> [title] §7- Register a framed artwork");
+        sender.sendMessage("§e/mapart wall info §7- Inspect the held tile or targeted frame");
+        sender.sendMessage("§7Artwork tiles share title, credit and protection; normal commands edit the entire artwork.");
         sender.sendMessage("§8§m----------------------------------------------------");
     }
 }

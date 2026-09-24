@@ -10,9 +10,15 @@ public final class HologramUtil {
     private HologramUtil() {}
 
     public static void spawn(ItemFrame frame, String text) {
+        spawn(frame, text, 0);
+    }
+
+    public static void spawn(ItemFrame frame, String text, double horizontalShift) {
         remove(frame);
         Location location = frame.getLocation().clone().add(0, -0.65, 0)
                 .add(frame.getFacing().getDirection().multiply(0.12));
+        if (horizontalShift != 0 && frame.getFacing().getModY() == 0)
+            location.add(net.glassmc.mapartcopyright.artwork.WallSelection.rightOf(frame.getFacing()).getDirection().multiply(horizontalShift));
         TextDisplay display = frame.getWorld().spawn(location, TextDisplay.class, entity -> {
             entity.text(MapMetadata.LEGACY.deserialize(text));
             entity.setBillboard(Display.Billboard.CENTER);

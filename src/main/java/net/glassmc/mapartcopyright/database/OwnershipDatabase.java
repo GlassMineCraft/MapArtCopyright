@@ -46,6 +46,7 @@ public final class OwnershipDatabase {
                         )
                         """);
             }
+            ArtworkDatabase.createTables(requireConnection());
             plugin.getLogger().info("Ownership database connected: " + type);
             return true;
         } catch (SQLException | RuntimeException ex) {
@@ -63,6 +64,49 @@ public final class OwnershipDatabase {
     private static Connection requireConnection() throws SQLException {
         if (!isConnected()) throw new SQLException("Ownership database is unavailable");
         return connection;
+    }
+
+    @FunctionalInterface
+    interface SqlWork<T> { T run(Connection connection) throws SQLException; }
+
+    static synchronized <T> T read(SqlWork<T> work) throws SQLException {
+        return work.run(requireConnection());
+    }
+
+    /** Serialize a complete artwork write, rolling back every ownership and tile row together. */
+    static synchronized <T> T transaction(SqlWork<T> work) throws SQLException {
+        Connection current = requireConnection();
+        if (!current.getAutoCommit()) throw new SQLException("Nested ownership transaction is not supported");
+        current.setAutoCommit(false);
+        boolean reusable = true;
+        try {
+            T result = work.run(current);
+            current.commit();
+            return result;
+        } catch (SQLException | RuntimeException ex) {
+            try { current.rollback(); }
+            catch (SQLException rollback) {
+                ex.addSuppressed(rollback);
+                reusable = false; // Enabling auto-commit after a failed rollback could commit partial work.
+                discard(current);
+            }
+            throw ex;
+        } finally {
+            if (reusable) {
+                try { current.setAutoCommit(true); }
+                catch (SQLException reset) {
+                    // A successful commit must not be reported as failed/refunded just because cleanup failed.
+                    MapArtCopyright.getInstance().getLogger().warning("Database connection reset failed after transaction: " + reset.getMessage());
+                    discard(current);
+                }
+            }
+        }
+    }
+
+    private static void discard(Connection current) {
+        try { current.close(); }
+        catch (SQLException ex) { MapArtCopyright.getInstance().getLogger().warning("Database close failed: " + ex.getMessage()); }
+        if (connection == current) connection = null;
     }
 
     public static synchronized MapRecord find(String id) throws SQLException {

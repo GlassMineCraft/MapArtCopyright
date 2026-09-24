@@ -35,13 +35,25 @@ public class InfoCommand implements SubCommand {
 
         String uuid = meta.getPersistentDataContainer().get(LockUtil.MAPART_ID_KEY, PersistentDataType.STRING);
         String credit = meta.getPersistentDataContainer().get(LockUtil.CREDIT_KEY, PersistentDataType.STRING);
-        boolean locked = meta.getPersistentDataContainer().getOrDefault(LockUtil.LOCK_KEY, PersistentDataType.BYTE, (byte) 0) == 1;
+        boolean locked = net.glassmc.mapartcopyright.api.MapArtAPI.isLocked(item);
+        try {
+            var membership = net.glassmc.mapartcopyright.service.ArtworkService.find(item);
+            if (membership != null) credit = membership.artwork().credit();
+        } catch (java.sql.SQLException ignored) { /* The unavailable-data warning is shown below. */ }
 
         player.sendMessage("§8§m-----------------------------");
         player.sendMessage("§bMapArt Information:");
         player.sendMessage(" §7UUID: §f" + (uuid != null ? uuid : "§cNone"));
         player.sendMessage(" §7Creator: §f" + (credit != null ? credit : "§cNone"));
         player.sendMessage(" §7Locked: " + (locked ? "§aYes" : "§cNo"));
+        try {
+            var membership = net.glassmc.mapartcopyright.service.ArtworkService.find(item);
+            if (membership != null) {
+                player.sendMessage(" §7Artwork: §f" + membership.artwork().id() + " (" + membership.artwork().size() + ")");
+                player.sendMessage(" §7Tile: §f" + (membership.tile().x() + 1) + "," + (membership.tile().y() + 1));
+                player.sendMessage(" §7Shared copy lock: §f" + membership.artwork().locked());
+            }
+        } catch (java.sql.SQLException ex) { player.sendMessage("§cArtwork data is currently unavailable."); }
         player.sendMessage("§8§m-----------------------------");
     }
 }

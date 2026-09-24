@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 public class MapArtTabCompleter implements TabCompleter {
 
         private static final List<String> SUBCOMMANDS = Arrays.asList(
-                    "lock", "unlock", "name", "credit", "menu", "audit", "info", "verify", "help", "export"
+                    "lock", "unlock", "name", "credit", "menu", "wall", "audit", "info", "verify", "help", "export"
                 );
  
 
@@ -24,11 +24,18 @@ public class MapArtTabCompleter implements TabCompleter {
 	        return SUBCOMMANDS.stream()
 	                .filter(sub -> {
 	                    if (sub.equals("audit") && !sender.hasPermission("mapart.audit")) return false;
+                        if (sub.equals("wall") && !sender.hasPermission("mapart.wall")) return false;
 	                    return sub.startsWith(args[0].toLowerCase());
 	                })
 	                .collect(Collectors.toList());
 	    }
 
+        if (args[0].equalsIgnoreCase("wall") && sender.hasPermission("mapart.wall")) {
+            if (args.length == 2) return List.of("create", "info").stream()
+                    .filter(value -> value.startsWith(args[1].toLowerCase(java.util.Locale.ROOT))).toList();
+            if (args.length == 3 && args[1].equalsIgnoreCase("create")) return net.glassmc.mapartcopyright.artwork.ArtworkSize.PRESETS.stream()
+                    .filter(value -> value.startsWith(args[2].toLowerCase(java.util.Locale.ROOT))).toList();
+        }
 	    if (args.length == 2) {
 	        if (args[0].equalsIgnoreCase("credit") || args[0].equalsIgnoreCase("name")) {
 	            if (sender instanceof Player player) {

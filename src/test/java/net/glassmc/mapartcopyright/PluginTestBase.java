@@ -29,7 +29,7 @@ abstract class PluginTestBase {
 
     private void permissions(PlayerMock player) {
         PermissionAttachment attachment = player.addAttachment(plugin);
-        for (String permission : new String[]{"use", "menu", "lock", "unlock", "rename", "credit",
+        for (String permission : new String[]{"use", "menu", "wall", "lock", "unlock", "rename", "credit",
                 "toggle.displayname", "toggle.hologram", "toggle.itemframe", "audit", "export"})
             attachment.setPermission("mapart." + permission, true);
         attachment.setPermission("mapart.bypass", false);

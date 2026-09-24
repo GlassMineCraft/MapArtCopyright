@@ -1,6 +1,7 @@
 package net.glassmc.mapartcopyright.api;
 
 import net.glassmc.mapartcopyright.database.OwnershipDatabase;
+import net.glassmc.mapartcopyright.service.ArtworkService;
 import net.glassmc.mapartcopyright.util.*;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
@@ -14,7 +15,25 @@ public final class MapArtAPI {
     private MapArtAPI() {}
     public static boolean isLocked(ItemStack item) {
         if (item == null || !(item.getItemMeta() instanceof MapMeta meta)) return false;
+        try {
+            var membership = ArtworkService.find(item);
+            if (membership != null) return membership.artwork().locked();
+        } catch (java.sql.SQLException ex) { return true; } // Fail closed, including stale pre-group copies.
         return meta.getPersistentDataContainer().getOrDefault(LockUtil.LOCK_KEY, PersistentDataType.BYTE, (byte) 0) == 1;
+    }
+
+    public static boolean isFrameLocked(ItemStack item) {
+        if (item == null || !(item.getItemMeta() instanceof MapMeta meta)) return false;
+        try {
+            var membership = ArtworkService.find(item);
+            if (membership != null) return membership.artwork().frameLocked();
+        } catch (java.sql.SQLException ex) { return true; }
+        return meta.getPersistentDataContainer().getOrDefault(LockUtil.ITEMFRAME_LOCK_KEY, PersistentDataType.BYTE, (byte) 0) == 1;
+    }
+
+    public static boolean isArtworkTile(ItemStack item) {
+        try { return ArtworkService.find(item) != null; }
+        catch (java.sql.SQLException ex) { return true; }
     }
     public static String getMapUUID(ItemStack item) {
         if (item == null || !(item.getItemMeta() instanceof MapMeta meta)) return null;

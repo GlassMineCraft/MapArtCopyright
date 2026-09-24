@@ -24,6 +24,7 @@ public class AnvilRenameListener implements Listener {
     }
 
     private boolean allowed(Player player, ItemStack item) {
+        if (MapArtAPI.isArtworkTile(item)) return false;
         return player.hasPermission("mapart.use") && player.hasPermission("mapart.rename")
                 && ((MapArtAPI.getMapUUID(item) == null && !MapArtAPI.isLocked(item))
                 || MapArtAPI.isOwner(player, item) || player.hasPermission("mapart.bypass"));

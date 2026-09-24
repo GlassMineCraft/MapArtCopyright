@@ -17,7 +17,13 @@ public final class EconomyUtil {
     public static double getCost(String action) { return MapArtCopyright.getInstance().getConfig().getDouble("economy." + action + "-cost", 0); }
 
     public static Receipt withdraw(Player player, String action) {
-        double amount = isEnabled() && !player.hasPermission("mapart.free") ? getCost(action) : 0;
+        return withdraw(player, action, 1);
+    }
+
+    /** Charge one provider transaction for a bounded number of changed tiles. */
+    public static Receipt withdraw(Player player, String action, int units) {
+        if (units < 0 || units > 9) throw new IllegalArgumentException("Invalid number of tiles to charge");
+        double amount = isEnabled() && !player.hasPermission("mapart.free") ? getCost(action) * units : 0;
         if (!Double.isFinite(amount) || amount < 0) throw new IllegalStateException("The configured fee is invalid. Contact an administrator.");
         if (amount == 0) return new Receipt(null, 0);
         Economy economy = EconomyHandler.get();

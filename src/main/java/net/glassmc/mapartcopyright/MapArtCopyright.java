@@ -10,6 +10,7 @@ import net.glassmc.mapartcopyright.listeners.MapFrameListener;
 import net.glassmc.mapartcopyright.listeners.MapInteractionListener;
 import net.glassmc.mapartcopyright.listeners.AnvilRenameListener;
 import net.glassmc.mapartcopyright.listeners.MapDropListener;
+import net.glassmc.mapartcopyright.listeners.ArtworkSyncListener;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
@@ -42,6 +43,7 @@ public class MapArtCopyright extends JavaPlugin {
         pm.registerEvents(new MapInteractionListener(), this);
         pm.registerEvents(new AnvilRenameListener(), this);
         pm.registerEvents(new MapDropListener(), this);
+        pm.registerEvents(new ArtworkSyncListener(), this);
 
         if (!EconomyHandler.setup()) {
             getLogger().warning("Vault not found or no economy provider detected.");

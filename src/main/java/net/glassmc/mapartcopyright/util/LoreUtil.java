@@ -20,6 +20,16 @@ public final class LoreUtil {
                 .append(MapMetadata.LEGACY.deserialize(credit)).decoration(TextDecoration.ITALIC, false));
         if (meta.getPersistentDataContainer().getOrDefault(LockUtil.LOCK_KEY, PersistentDataType.BYTE, (byte) 0) == 1)
             lore.add(Component.text("Locked", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
+        var data = meta.getPersistentDataContainer();
+        if (data.has(LockUtil.ARTWORK_ID_KEY, PersistentDataType.STRING)) {
+            int width = data.getOrDefault(LockUtil.ARTWORK_WIDTH_KEY, PersistentDataType.INTEGER, 1);
+            int height = data.getOrDefault(LockUtil.ARTWORK_HEIGHT_KEY, PersistentDataType.INTEGER, 1);
+            int x = data.getOrDefault(LockUtil.TILE_X_KEY, PersistentDataType.INTEGER, 0) + 1;
+            int y = data.getOrDefault(LockUtil.TILE_Y_KEY, PersistentDataType.INTEGER, 0) + 1;
+            lore.add(Component.text("Artwork: " + width + "x" + height + " | Tile " + x + "," + y,
+                    NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.text("Edits affect the whole artwork", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        }
         meta.lore(lore);
     }
     public static void updateMapLore(ItemStack item) {

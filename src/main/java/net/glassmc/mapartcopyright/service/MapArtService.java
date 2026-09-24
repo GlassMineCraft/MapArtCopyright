@@ -137,7 +137,13 @@ public final class MapArtService {
             Messages.send(player, "map-required", "§cHold a filled map in your hand to do this.");
             return false;
         }
-        return PermissionUtil.canModify(player, item);
+        if (!PermissionUtil.canModify(player, item)) return false;
+        try { ArtworkService.refresh(item); }
+        catch (SQLException ex) {
+            player.sendMessage("§cArtwork ownership is unavailable. Try again after the database is restored.");
+            return false;
+        }
+        return true;
     }
 
     private static MapRecord existing(ItemStack item) throws SQLException {
@@ -156,6 +162,8 @@ public final class MapArtService {
         boolean persisted = false;
         String operation = UUID.randomUUID().toString();
         try {
+            var artwork = ArtworkService.find(item);
+            if (artwork != null) return ArtworkService.change(player, item, artwork, action, fee, edit);
             before = existing(item);
             if (before != null && !before.playerUUID.equals(player.getUniqueId()) && !player.hasPermission("mapart.bypass"))
                 throw new IllegalStateException("You are not the owner of this map.");
@@ -198,6 +206,7 @@ public final class MapArtService {
 
     /** Prepare an anvil result without changing the input or database. */
     public static ItemStack previewAnvilName(ItemStack input, String raw) {
+        if (MapArtAPI.isArtworkTile(input)) throw new IllegalArgumentException("Use /mapart name to rename all artwork tiles together.");
         Component name = StringSanitizer.parseComponent(raw, 32);
         boolean empty = PlainTextComponentSerializer.plainText().serialize(name).isBlank();
         if (empty && requireName()) throw new IllegalArgumentException("Map names must remain visible on this server.");
@@ -215,6 +224,10 @@ public final class MapArtService {
     /** Persist an authorized anvil preview before allowing the result to be taken. */
     public static boolean saveAnvilResult(Player player, ItemStack input, ItemStack result) {
         if (!authorize(player, input, "mapart.rename")) return false;
+        if (MapArtAPI.isArtworkTile(input)) {
+            player.sendMessage("§cUse /mapart name to rename all artwork tiles together.");
+            return false;
+        }
         try {
             MapRecord before = existing(input);
             if (before != null) {

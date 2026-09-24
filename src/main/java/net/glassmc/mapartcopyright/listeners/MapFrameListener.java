@@ -3,6 +3,7 @@ package net.glassmc.mapartcopyright.listeners;
 import net.glassmc.mapartcopyright.MapArtCopyright;
 import net.glassmc.mapartcopyright.Audit.AuditLogger;
 import net.glassmc.mapartcopyright.api.MapArtAPI;
+import net.glassmc.mapartcopyright.service.ArtworkService;
 import net.glassmc.mapartcopyright.util.*;
 import org.bukkit.*;
 import org.bukkit.entity.*;
@@ -18,8 +19,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 public class MapFrameListener implements Listener {
     public static boolean frameLocked(ItemStack item) {
-        return item != null && item.getItemMeta() instanceof MapMeta meta && meta.getPersistentDataContainer()
-                .getOrDefault(LockUtil.ITEMFRAME_LOCK_KEY, PersistentDataType.BYTE, (byte) 0) == 1;
+        return MapArtAPI.isFrameLocked(item);
     }
     public static boolean protectedFrame(ItemFrame frame) { return MapArtAPI.isLocked(frame.getItem()) || frameLocked(frame.getItem()); }
     private boolean allowed(Player player, ItemFrame frame) {
@@ -89,12 +89,20 @@ public class MapFrameListener implements Listener {
     public static void refresh(ItemFrame frame) {
         if (!frame.isValid()) { HologramUtil.remove(frame); return; }
         ItemStack item = frame.getItem();
+        try { if (ArtworkService.refresh(item)) frame.setItem(item, false); }
+        catch (java.sql.SQLException ex) { ArtworkService.warnSync(ex); return; }
         if (!(item.getItemMeta() instanceof MapMeta meta)) { HologramUtil.remove(frame); return; }
         if (frameLocked(item)) frame.setFixed(false);
         String credit = CreditUtil.getCredit(item);
         boolean visible = meta.getPersistentDataContainer().getOrDefault(LockUtil.HOLOGRAM_VISIBLE_KEY, PersistentDataType.BYTE,
                 (byte) (MapArtCopyright.getInstance().getConfig().getBoolean("settings.default-hologram-visible", true) ? 1 : 0)) == 1;
-        if (credit != null && visible) HologramUtil.spawn(frame, "§7Creator: §f" + credit);
+        var data = meta.getPersistentDataContainer();
+        int artworkWidth = data.getOrDefault(LockUtil.ARTWORK_WIDTH_KEY, PersistentDataType.INTEGER, 1);
+        if (data.has(LockUtil.ARTWORK_ID_KEY, PersistentDataType.STRING)
+                && (data.getOrDefault(LockUtil.TILE_X_KEY, PersistentDataType.INTEGER, 0) != 0
+                || data.getOrDefault(LockUtil.TILE_Y_KEY, PersistentDataType.INTEGER, 0)
+                != data.getOrDefault(LockUtil.ARTWORK_HEIGHT_KEY, PersistentDataType.INTEGER, 1) - 1)) visible = false;
+        if (credit != null && visible) HologramUtil.spawn(frame, "§7Creator: §f" + credit, (artworkWidth - 1) / 2.0);
         else HologramUtil.remove(frame);
     }
 

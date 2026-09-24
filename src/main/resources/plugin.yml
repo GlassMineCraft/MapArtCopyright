@@ -1,7 +1,7 @@
 name: MapArtCopyright
-version: 1.2.1
+version: 1.3.0
 main: net.glassmc.mapartcopyright.MapArtCopyright
-api-version: 1.21
+api-version: '26.1.2'
 author: GlassMC
 description: Adds copyright, naming, and locking features for map art
 
@@ -40,6 +40,10 @@ permissions:
   mapart.menu:
     description: Allows opening and interacting with the map menu
     default: true
+
+  mapart.wall:
+    description: Register and inspect multi-map artwork walls (creation also requires lock, rename and credit)
+    default: op
 
   mapart.toggle.displayname:
     description: Toggle map name visibility in GUI
@@ -91,6 +95,7 @@ permissions:
       mapart.credit: true
       mapart.rename: true
       mapart.menu: true
+      mapart.wall: true
       mapart.toggle.displayname: true
       mapart.toggle.hologram: true
       mapart.toggle.itemframe: true
