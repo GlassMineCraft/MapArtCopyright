@@ -3,6 +3,10 @@ package net.glassmc.mapartcopyright.gui;
 import net.glassmc.mapartcopyright.api.MapArtAPI;
 import net.glassmc.mapartcopyright.util.CreditUtil;
 import net.glassmc.mapartcopyright.util.LockUtil;
+import net.glassmc.mapartcopyright.util.MapMetadata;
+import net.glassmc.mapartcopyright.util.Messages;
+import net.glassmc.mapartcopyright.MapArtCopyright;
+import net.glassmc.mapartcopyright.service.ArtworkService;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -53,9 +57,18 @@ public class MapArtGUI {
      *   Map Name        : icon=33, pane=42  (also accessible via slot 2 in row 0)
      */
     public static void open(Player player, ItemStack mapItem) {
-        Inventory gui = Bukkit.createInventory(null, 45, GUI_TITLE);
+        if (!canOpen(player)) return;
+        if (mapItem == null || !(mapItem.getItemMeta() instanceof MapMeta)) {
+            Messages.send(player, "map-required", "§cHold a filled map in your hand to do this.");
+            return;
+        }
+        try { ArtworkService.refresh(mapItem); }
+        catch (java.sql.SQLException ex) { player.sendMessage("§cArtwork data is unavailable. Try again after restoring the database."); return; }
+        MapArtMenu holder = new MapArtMenu(player, mapItem);
+        Inventory gui = Bukkit.createInventory(holder, 45, MapArtCopyright.getInstance().getConfig().getString("gui.title", GUI_TITLE));
+        holder.inventory(gui);
 
-        ItemStack filler = item(Material.GRAY_STAINED_GLASS_PANE, Component.text(" "));
+        ItemStack filler = item(configuredMaterial("filler-item", Material.GRAY_STAINED_GLASS_PANE), Component.text(" "));
         for (int i = 0; i < 45; i++) gui.setItem(i, filler);
 
         MapMeta meta = (MapMeta) mapItem.getItemMeta();
@@ -63,10 +76,12 @@ public class MapArtGUI {
         boolean frameLocked = meta.getPersistentDataContainer()
                 .getOrDefault(LockUtil.ITEMFRAME_LOCK_KEY, PersistentDataType.BYTE, (byte) 0) == 1;
         boolean holoVisible = meta.getPersistentDataContainer()
-                .getOrDefault(LockUtil.HOLOGRAM_VISIBLE_KEY, PersistentDataType.BYTE, (byte) 1) == 1;
-        boolean nameVisible = meta.hasDisplayName() && meta.displayName() != null;
+                .getOrDefault(LockUtil.HOLOGRAM_VISIBLE_KEY, PersistentDataType.BYTE,
+                        (byte) (MapArtCopyright.getInstance().getConfig().getBoolean("settings.default-hologram-visible", true) ? 1 : 0)) == 1;
+        boolean nameVisible = MapMetadata.visible(meta);
         String  mapUUID     = MapArtAPI.getMapUUID(mapItem);
         String  credit      = CreditUtil.getCredit(mapItem);
+        boolean artwork = meta.getPersistentDataContainer().has(LockUtil.ARTWORK_ID_KEY, PersistentDataType.STRING);
 
         // ── Row 0: Display section ─────────────────────────────────────────────
 
@@ -81,6 +96,12 @@ public class MapArtGUI {
         List<Component> nameLore = lore(
                 Component.text("UUID: ", NamedTextColor.DARK_GRAY)
                         .append(txt(mapUUID != null ? mapUUID : "None", NamedTextColor.GRAY)));
+        if (meta.getPersistentDataContainer().has(LockUtil.ARTWORK_ID_KEY, PersistentDataType.STRING)) {
+            var data = meta.getPersistentDataContainer();
+            nameLore.add(txt("Artwork: " + data.get(LockUtil.ARTWORK_WIDTH_KEY, PersistentDataType.INTEGER) + "x"
+                    + data.get(LockUtil.ARTWORK_HEIGHT_KEY, PersistentDataType.INTEGER), NamedTextColor.AQUA));
+            nameLore.add(txt("All controls affect the whole artwork", NamedTextColor.YELLOW));
+        }
         gui.setItem(1, item(Material.PAPER,
                 Component.text("Map Name: ", NamedTextColor.GRAY)
                         .append(displayedName != null
@@ -116,10 +137,14 @@ public class MapArtGUI {
         ItemStack head     = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta headMeta = (SkullMeta) head.getItemMeta();
         if (credit != null) {
-            OfflinePlayer creditedPlayer = Bukkit.getOfflinePlayer(credit);
-            headMeta.setOwningPlayer(creditedPlayer);
+            // Display credit is not a player account. Avoid blocking profile lookups for arbitrary labels.
+            String creatorId = meta.getPersistentDataContainer().get(LockUtil.CREATOR_UUID_KEY, PersistentDataType.STRING);
+            if (creatorId != null) {
+                try { headMeta.setOwningPlayer(Bukkit.getOfflinePlayer(java.util.UUID.fromString(creatorId))); }
+                catch (IllegalArgumentException ignored) { }
+            }
             headMeta.displayName(Component.text("Creator: ", NamedTextColor.AQUA)
-                    .append(txt(credit, NamedTextColor.WHITE))
+                    .append(MapMetadata.LEGACY.deserialize(credit))
                     .decoration(TextDecoration.ITALIC, false));
         } else {
             headMeta.displayName(txt("No creator set", NamedTextColor.GRAY));
@@ -133,13 +158,17 @@ public class MapArtGUI {
 
         // Slot 22 — Lock Map (FILLED_MAP)
         List<Component> lockLore = lore(txt("Click to lock this map.", NamedTextColor.GRAY));
+        if (artwork) lockLore = lore(txt("Locks every tile and registered copy.", NamedTextColor.YELLOW),
+                txt("The configured fee applies per tile.", NamedTextColor.GRAY));
         if (!player.hasPermission("mapart.lock")) lockLore.add(noPerms());
-        gui.setItem(22, item(Material.FILLED_MAP, txt("Lock Map", NamedTextColor.RED), lockLore));
+        gui.setItem(22, item(Material.FILLED_MAP, txt(artwork ? "Lock Artwork" : "Lock Map", NamedTextColor.RED), lockLore));
 
         // Slot 24 — Unlock Map (FILLED_MAP)
         List<Component> unlockLore = lore(txt("Click to unlock this map.", NamedTextColor.GRAY));
+        if (artwork) unlockLore = lore(txt("Unlocks every tile and registered copy.", NamedTextColor.YELLOW),
+                txt("The configured fee applies per tile.", NamedTextColor.GRAY));
         if (!player.hasPermission("mapart.unlock")) unlockLore.add(noPerms());
-        gui.setItem(24, item(Material.FILLED_MAP, txt("Unlock Map", NamedTextColor.GREEN), unlockLore));
+        gui.setItem(24, item(Material.FILLED_MAP, txt(artwork ? "Unlock Artwork" : "Unlock Map", NamedTextColor.GREEN), unlockLore));
 
         // ── Row 3: Toggle icons ────────────────────────────────────────────────
 
@@ -185,10 +214,27 @@ public class MapArtGUI {
                 lore(txt(nameVisible ? "Click to hide." : "Click to show.", NamedTextColor.GRAY))));
 
         // Slot 44 — Close
-        gui.setItem(44, item(Material.BARRIER, txt("Close Menu", NamedTextColor.RED),
+        gui.setItem(44, item(configuredMaterial("exit-item", Material.BARRIER), txt("Close Menu", NamedTextColor.RED),
                 lore(txt("Click to exit.", NamedTextColor.GRAY))));
 
         player.openInventory(gui);
+    }
+
+    public static boolean canOpen(Player player) {
+        if (!player.hasPermission("mapart.use") || !player.hasPermission("mapart.menu")) {
+            Messages.send(player, "no-permission", "§cYou don't have permission to do that.");
+            return false;
+        }
+        if (!MapArtCopyright.getInstance().getConfig().getBoolean("features.enable-gui", true)) {
+            player.sendMessage("§cThe map menu is disabled on this server.");
+            return false;
+        }
+        return true;
+    }
+
+    private static Material configuredMaterial(String key, Material fallback) {
+        Material value = Material.matchMaterial(MapArtCopyright.getInstance().getConfig().getString("gui." + key, fallback.name()));
+        return value != null && value.isItem() && !value.isAir() ? value : fallback;
     }
 
     /** Builds the NAME_TAG toggle item for map name visibility (used in slots 2 and 33). */

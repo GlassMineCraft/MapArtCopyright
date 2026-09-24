@@ -1,0 +1,49 @@
+name: Build and test
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Test and package against Paper 26.1.2
+        run: mvn --batch-mode --no-transfer-progress clean verify
+      - name: Preserve baseline reports and production bytecode hashes
+        run: |
+          cp -R target/surefire-reports target/paper-26.1.2-reports
+          find target/classes -name '*.class' -type f -print0 | sort -z | xargs -0 sha256sum > target/production-classes.sha256
+      - name: Test the same production classes on Paper 26.2
+        run: |
+          mvn --batch-mode --no-transfer-progress -Ppaper26.2 -Dmaven.main.skip=true test
+          sha256sum --check --quiet target/production-classes.sha256
+      - name: Upload plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapartcopyright-${{ github.sha }}
+          path: target/mapartcopyright-*.jar
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ github.sha }}
+          path: |
+            target/surefire-reports/
+            target/paper-26.1.2-reports/
+            target/failsafe-reports/
+          if-no-files-found: ignore
+          retention-days: 14

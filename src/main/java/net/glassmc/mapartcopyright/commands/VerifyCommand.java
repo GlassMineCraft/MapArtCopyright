@@ -1,82 +1,51 @@
 package net.glassmc.mapartcopyright.commands;
 
+import net.glassmc.mapartcopyright.api.MapArtAPI;
 import net.glassmc.mapartcopyright.util.LockUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.persistence.PersistentDataType;
-
 import java.util.UUID;
 
 public class VerifyCommand implements SubCommand {
+    @Override public String getName() { return "verify"; }
 
-    @Override
-    public String getName() {
-        return "verify";
-    }
-
-    @Override
-    public void execute(CommandSender sender, String[] args) {
+    @Override public void execute(CommandSender sender, String[] args) {
         Player target;
-
-        if (args.length == 1) {
-            if (!(sender instanceof Player player)) {
-                sender.sendMessage("§cOnly players can verify their own maps.");
-                return;
-            }
-            if (!player.hasPermission("mapart.verify")) {
-                player.sendMessage("§cYou don’t have permission to verify map art.");
+        if (args.length == 1 && sender instanceof Player player) {
+            if (!sender.hasPermission("mapart.verify")) {
+                sender.sendMessage("§cYou do not have permission to verify map art.");
                 return;
             }
             target = player;
-
         } else if (args.length == 2) {
             if (!sender.hasPermission("mapart.verify.others")) {
-                sender.sendMessage("§cYou don’t have permission to verify maps for others.");
+                sender.sendMessage("§cYou do not have permission to verify other players' maps.");
                 return;
             }
             target = Bukkit.getPlayerExact(args[1]);
-            if (target == null) {
-                sender.sendMessage("§cPlayer not found or not online.");
-                return;
-            }
+            if (target == null) { sender.sendMessage("§cPlayer is not online."); return; }
         } else {
-            sender.sendMessage("§cUsage: /mapart verify [player]");
+            sender.sendMessage("§cUsage: /mapart verify [online player]");
             return;
         }
-
-        ItemStack item = target.getInventory().getItemInMainHand();
+        var item = target.getInventory().getItemInMainHand();
         if (!(item.getItemMeta() instanceof MapMeta meta)) {
-            sender.sendMessage("§cThat player is not holding a valid filled map.");
+            sender.sendMessage("§cThat player is not holding a filled map.");
             return;
         }
-
-        String mapName = meta.getPersistentDataContainer().get(LockUtil.MAPART_NAME_KEY, PersistentDataType.STRING);
-        if (!meta.getPersistentDataContainer().has(LockUtil.MAPART_NAME_KEY, PersistentDataType.STRING)) {
-            sender.sendMessage("§cVerification failed: Map name is not a string or was corrupted.");
-            return;
-        }
-
-        String creatorUUIDRaw = meta.getPersistentDataContainer().get(LockUtil.CREATOR_UUID_KEY, PersistentDataType.STRING);
-
-        sender.sendMessage("§7Verifying map for §f" + target.getName());
-
-        if (mapName == null || creatorUUIDRaw == null) {
-            sender.sendMessage("§cVerification failed: missing map name or creator UUID.");
-            return;
-        }
-
-        sender.sendMessage("§7Map Name: §f" + mapName);
-        sender.sendMessage("§7Creator UUID: §f" + creatorUUIDRaw);
-
-        try {
-            UUID creatorUUID = UUID.fromString(creatorUUIDRaw);
-            boolean isMatch = creatorUUID.equals(target.getUniqueId());
-            sender.sendMessage(isMatch ? "§aVerification PASSED." : "§cVerification FAILED.");
-        } catch (IllegalArgumentException ex) {
-            sender.sendMessage("§cVerification failed: malformed creator UUID.");
-        }
+        String id = MapArtAPI.getMapUUID(item);
+        UUID owner = MapArtAPI.getOwner(item);
+        sender.sendMessage("§7Map name: §f" + MapArtAPI.getStoredMapName(item).orElse("Untitled"));
+        sender.sendMessage("§7Map UUID: §f" + (id == null ? "unregistered" : id));
+        sender.sendMessage("§7Registered owner: §f" + (owner == null ? "not available" : owner));
+        sender.sendMessage(owner != null && owner.equals(target.getUniqueId())
+                ? "§aRegistered ownership verified." : "§eRegistered ownership could not be verified for this player.");
+        var data = meta.getPersistentDataContainer();
+        String creator = data.has(LockUtil.CREATOR_UUID_KEY, PersistentDataType.STRING)
+                ? data.get(LockUtil.CREATOR_UUID_KEY, PersistentDataType.STRING) : null;
+        sender.sendMessage("§7Creator UUID (attribution only): §f" + (creator == null ? "not recorded" : creator));
     }
 }

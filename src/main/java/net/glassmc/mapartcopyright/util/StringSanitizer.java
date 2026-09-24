@@ -49,6 +49,10 @@ public class StringSanitizer {
         if (input == null) return Component.empty();
 
         String trimmed = input.trim();
+        if (trimmed.codePoints().anyMatch(Character::isISOControl)) {
+            throw new IllegalArgumentException("Control characters are not allowed.");
+        }
+        if (trimmed.length() > 2048) throw new IllegalArgumentException("Input is too long.");
 
         Component component;
         try {
@@ -59,12 +63,15 @@ public class StringSanitizer {
                         .tags(TagResolver.builder()
                                 .resolver(StandardTags.color())
                                 .resolver(StandardTags.decorations())
+                                .resolver(StandardTags.gradient())
                                 .build())
                         .build();
                 component = mm.deserialize(trimmed);
             } else {
                 // Fallback to legacy & codes (supports hex with &#RRGGBB)
-                component = LegacyComponentSerializer.legacyAmpersand().deserialize(trimmed);
+                component = trimmed.indexOf('§') >= 0
+                        ? MapMetadata.LEGACY.deserialize(trimmed)
+                        : LegacyComponentSerializer.legacyAmpersand().deserialize(trimmed);
             }
         } catch (Exception ex) {
             throw new IllegalArgumentException("Invalid color codes. Use <#RRGGBB>Text</#RRGGBB>.");

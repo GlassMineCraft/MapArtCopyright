@@ -9,6 +9,7 @@ public class EconomyHandler {
     private static Economy economy;
 
     public static boolean setup() {
+        economy = null;
         if (Bukkit.getPluginManager().getPlugin("Vault") == null) return false;
 
         RegisteredServiceProvider<Economy> provider =
@@ -22,6 +23,7 @@ public class EconomyHandler {
     }
 
     public static Economy get() {
+        setup(); // Providers may register/unregister after this plugin enables.
         return economy;
     }
 }

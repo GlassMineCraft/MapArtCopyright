@@ -1,93 +1,79 @@
 package net.glassmc.mapartcopyright.listeners;
 
+import net.glassmc.mapartcopyright.MapArtCopyright;
 import net.glassmc.mapartcopyright.Audit.AuditLogger;
 import net.glassmc.mapartcopyright.api.MapArtAPI;
-import net.glassmc.mapartcopyright.util.StringSanitizer;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.glassmc.mapartcopyright.database.*;
+import net.glassmc.mapartcopyright.service.MapArtService;
+import net.glassmc.mapartcopyright.util.*;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.inventory.PrepareAnvilEvent;
-import org.bukkit.inventory.AnvilInventory;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.event.*;
+import org.bukkit.event.inventory.*;
+import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.MapMeta;
+import org.bukkit.inventory.view.AnvilView;
+import java.sql.SQLException;
 
 public class AnvilRenameListener implements Listener {
-
-    private boolean canRename(Player player, ItemStack item) {
-        if (!player.hasPermission("mapart.rename")) {
-            return false;
-        }
-        boolean locked = MapArtAPI.isLocked(item);
-        boolean isOwner = MapArtAPI.isOwner(player, item);
-        boolean hasBypass = player.hasPermission("mapart.bypass");
-        return !locked || isOwner || hasBypass;
+    private boolean changed(ItemStack input, String raw) {
+        if (raw == null || !(input.getItemMeta() instanceof MapMeta meta)) return false;
+        String current = meta.displayName() == null ? "" : PlainTextComponentSerializer.plainText().serialize(meta.displayName());
+        return !raw.equals(current);
     }
 
-    @EventHandler
+    private boolean allowed(Player player, ItemStack item) {
+        if (MapArtAPI.isArtworkTile(item)) return false;
+        return player.hasPermission("mapart.use") && player.hasPermission("mapart.rename")
+                && ((MapArtAPI.getMapUUID(item) == null && !MapArtAPI.isLocked(item))
+                || MapArtAPI.isOwner(player, item) || player.hasPermission("mapart.bypass"));
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPrepareAnvil(PrepareAnvilEvent event) {
-        AnvilInventory inv = event.getInventory();
-        ItemStack input = inv.getItem(0);
-        if (input == null || !(input.getItemMeta() instanceof MapMeta)) return;
-
-        String rename = inv.getRenameText();
-        if (rename == null) return;
-        MapMeta meta = (MapMeta) input.getItemMeta();
-        if (rename.isBlank() || (meta.hasDisplayName() && rename.equals(PlainTextComponentSerializer.plainText().serialize(meta.displayName())))) return;
-
+        ItemStack input = event.getInventory().getItem(0);
+        String raw = event.getView().getRenameText();
+        if (input == null || !changed(input, raw)) return;
         Player player = (Player) event.getView().getPlayer();
-        if (!canRename(player, input)) {
-            event.setResult(null);
-            return;
-        }
-
-        try {
-            Component name = StringSanitizer.parseComponent(rename, 32);
-            ItemStack result = input.clone();
-            MapMeta resultMeta = (MapMeta) result.getItemMeta();
-            resultMeta.displayName(name);
-            result.setItemMeta(resultMeta);
-            event.setResult(result);
-        } catch (IllegalArgumentException ex) {
-            player.sendMessage(Component.text(ex.getMessage(), NamedTextColor.RED));
-            event.setResult(null);
-        }
+        if (!allowed(player, input)) { event.setResult(null); return; }
+        try { event.setResult(MapArtService.previewAnvilName(input, raw)); }
+        catch (IllegalArgumentException ex) { event.setResult(null); }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onResultClick(InventoryClickEvent event) {
-        if (!(event.getInventory() instanceof AnvilInventory inv)) return;
-        if (event.getSlotType() != InventoryType.SlotType.RESULT) return;
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        ItemStack input = inv.getItem(0);
-        if (input == null || !(input.getItemMeta() instanceof MapMeta)) return;
-
-        String rename = inv.getRenameText();
-        if (rename == null) return;
-        MapMeta meta = (MapMeta) input.getItemMeta();
-        if (rename.isBlank() || (meta.hasDisplayName() && rename.equals(PlainTextComponentSerializer.plainText().serialize(meta.displayName())))) return;
-
-        String mapUUID = MapArtAPI.getMapUUID(input);
-        if (!canRename(player, input)) {
+        if (!(event.getInventory() instanceof AnvilInventory inventory) || event.getRawSlot() != 2
+                || !(event.getWhoClicked() instanceof Player player) || event.getAction() == InventoryAction.NOTHING) return;
+        ItemStack input = inventory.getItem(0);
+        if (!(event.getView() instanceof AnvilView view)) return;
+        String raw = view.getRenameText();
+        if (input == null || !changed(input, raw)) return;
+        if (!allowed(player, input)) {
             event.setCancelled(true);
-            if (!player.hasPermission("mapart.rename")) {
-                player.sendMessage("§cYou don’t have permission to rename maps.");
-            } else {
-                player.sendMessage("§cThis map is locked and you are not the owner.");
-            }
-            if (mapUUID != null) {
-                AuditLogger.log("denied_rename", player.getName(), mapUUID);
-            }
+            Messages.send(player, "no-permission", "§cYou cannot rename this map.");
+            AuditLogger.log("denied_rename", player, MapArtAPI.getMapUUID(input), "anvil");
             return;
         }
-
-        if (mapUUID != null) {
-            AuditLogger.log("renamed", player.getName(), mapUUID);
+        try {
+            ItemStack result = MapArtService.previewAnvilName(input, raw);
+            String id = MapArtAPI.getMapUUID(input);
+            MapRecord before = id == null ? null : OwnershipDatabase.find(id);
+            if (!MapArtService.saveAnvilResult(player, input, result)) { event.setCancelled(true); return; }
+            event.setCurrentItem(result);
+            MapMeta resultMeta = (MapMeta) result.getItemMeta();
+            MapRecord expected = before == null ? null : new MapRecord(id, before.playerUUID, MapMetadata.storedName(resultMeta), CreditUtil.getCredit(result));
+            Bukkit.getScheduler().runTask(MapArtCopyright.getInstance(), () -> {
+                if (event.isCancelled()) {
+                    if (before != null) {
+                        try { OwnershipDatabase.restoreMetadataIfUnchanged(expected, before); }
+                        catch (SQLException ex) { MapArtCopyright.getInstance().getLogger().severe("Could not revert canceled anvil metadata: " + ex.getMessage()); }
+                    }
+                } else AuditLogger.log("anvil_rename_allowed", player, id, "authorized vanilla result");
+            });
+        } catch (IllegalArgumentException | SQLException ex) {
+            event.setCancelled(true);
+            player.sendMessage("§cThe map could not be renamed: " + ex.getMessage());
         }
     }
 }
